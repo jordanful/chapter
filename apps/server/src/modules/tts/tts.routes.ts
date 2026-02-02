@@ -229,6 +229,74 @@ export const ttsRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
+  // Generate a specific chunk on-demand (fallback for slow background generation)
+  app.post<{ Params: { bookId: string; chapterId: string; chunkIndex: string } }>(
+    '/chapters/:bookId/:chapterId/chunk/:chunkIndex',
+    async (request, reply) => {
+      try {
+        const { bookId, chapterId, chunkIndex } = request.params;
+        const userId = (request.user as any).userId;
+        const index = parseInt(chunkIndex, 10);
+
+        if (isNaN(index) || index < 0) {
+          return reply.code(400).send({ error: 'Invalid chunk index' });
+        }
+
+        // Validate request body
+        const body = generateChapterSchema.parse(request.body);
+
+        // Verify access
+        const userBook = await prisma.userBook.findUnique({
+          where: { userId_bookId: { userId, bookId } },
+        });
+
+        if (!userBook) {
+          return reply.code(403).send({ error: 'Access denied' });
+        }
+
+        // Get chapter
+        const chapter = await prisma.chapter.findUnique({
+          where: { id: chapterId },
+        });
+
+        if (!chapter || chapter.bookId !== bookId) {
+          return reply.code(404).send({ error: 'Chapter not found' });
+        }
+
+        // Re-chunk the text (deterministic)
+        const chunks = chunker.chunk(chapter.textContent, chapter.startPosition);
+
+        if (index >= chunks.length) {
+          return reply.code(404).send({ error: 'Chunk index out of range' });
+        }
+
+        // Generate this specific chunk (will return cached if exists)
+        const audio = await audioCacheService.generateChunkOnDemand(
+          bookId,
+          chapterId,
+          chunks[index],
+          body.voiceId as any,
+          body.settings
+        );
+
+        return reply.send({
+          id: audio.id,
+          index,
+          duration: audio.audioDuration,
+          size: audio.audioSize,
+          startPosition: chunks[index].startPosition,
+          endPosition: chunks[index].endPosition,
+        });
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.code(400).send({ error: 'Invalid input', details: error.errors });
+        }
+        const message = error instanceof Error ? error.message : 'Failed to generate chunk';
+        return reply.code(500).send({ error: message });
+      }
+    }
+  );
+
   // Get audio chunks for a chapter
   app.get<{ Params: { bookId: string; chapterId: string } }>(
     '/chapters/:bookId/:chapterId',

@@ -28,6 +28,7 @@ interface AudioPlayerProps {
   chapterTitle: string;
   chunks: AudioChunk[];
   onPositionChange?: (position: number, chunkId?: string) => void;
+  onChunkNeeded?: (chunkIndex: number) => Promise<void>;
   initialChunkId?: string;
   initialTime?: number;
   className?: string;
@@ -47,6 +48,7 @@ export function AudioPlayer({
   chapterTitle,
   chunks,
   onPositionChange,
+  onChunkNeeded,
   initialChunkId,
   initialTime,
   className = '',
@@ -63,6 +65,7 @@ export function AudioPlayer({
     chapterId,
     chunks,
     onPositionChange,
+    onChunkNeeded,
     initialChunkId,
     initialTime,
   });

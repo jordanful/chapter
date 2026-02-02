@@ -245,9 +245,9 @@ export class AudioCacheService {
     });
     results.push(firstAudio);
 
-    // Pre-generate next chunks in background (non-blocking)
+    // Generate remaining chunks in background (non-blocking)
     setImmediate(async () => {
-      for (let i = 1; i < Math.min(4, chunks.length); i++) {
+      for (let i = 1; i < chunks.length; i++) {
         try {
           await this.getOrGenerateAudio({
             text: chunks[i].text,
@@ -265,6 +265,27 @@ export class AudioCacheService {
     });
 
     return results;
+  }
+
+  /**
+   * Generate a single chunk on-demand (for fallback when background generation is slow)
+   */
+  async generateChunkOnDemand(
+    bookId: string,
+    chapterId: string,
+    chunk: TextChunk,
+    voiceId: KokoroVoice,
+    settings?: TTSSettings
+  ): Promise<CachedAudio> {
+    return this.getOrGenerateAudio({
+      text: chunk.text,
+      voiceId,
+      settings,
+      bookId,
+      chapterId,
+      startPosition: chunk.startPosition,
+      endPosition: chunk.endPosition,
+    });
   }
 
   /**

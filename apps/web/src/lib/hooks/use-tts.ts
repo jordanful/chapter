@@ -82,3 +82,45 @@ export function useAudioChunks(bookId: string, chapterId: string) {
     enabled: !!bookId && !!chapterId,
   });
 }
+
+export function useGenerateChunk() {
+  const mutation = useMutation({
+    mutationFn: async ({
+      bookId,
+      chapterId,
+      chunkIndex,
+      voiceId,
+      settings,
+    }: {
+      bookId: string;
+      chapterId: string;
+      chunkIndex: number;
+      voiceId: string;
+      settings?: any;
+    }) => {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/tts/chapters/${bookId}/${chapterId}/chunk/${chunkIndex}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('chapter_token')}`,
+          },
+          body: JSON.stringify({ voiceId, settings }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to generate chunk');
+      }
+
+      return response.json();
+    },
+  });
+
+  return {
+    generateChunk: mutation.mutateAsync,
+    isGenerating: mutation.isPending,
+    error: mutation.error,
+  };
+}

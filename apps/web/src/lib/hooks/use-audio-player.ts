@@ -31,6 +31,7 @@ export interface UseAudioPlayerOptions {
   chunks: AudioChunk[];
   onPositionChange?: (position: number, chunkId?: string) => void;
   onChunkChange?: (chunkIndex: number) => void;
+  onChunkNeeded?: (chunkIndex: number) => Promise<void>;
   initialChunkId?: string;
   initialTime?: number;
 }
@@ -41,10 +42,12 @@ export function useAudioPlayer({
   chunks,
   onPositionChange,
   onChunkChange,
+  onChunkNeeded,
   initialChunkId,
   initialTime,
 }: UseAudioPlayerOptions) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const pendingChunkRef = useRef<number | null>(null);
   const [state, setState] = useState<AudioPlayerState>({
     isPlaying: false,
     currentTime: 0,
@@ -73,33 +76,54 @@ export function useAudioPlayer({
   }, []);
 
   // Load chunk audio
-  const loadChunk = useCallback(async (chunkIndex: number) => {
-    if (!audioRef.current || !chunks[chunkIndex]) return;
+  const loadChunk = useCallback(
+    async (chunkIndex: number) => {
+      if (!audioRef.current) return;
 
-    const chunk = chunks[chunkIndex];
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
+      // If chunk is missing, request it on-demand
+      if (!chunks[chunkIndex]) {
+        if (onChunkNeeded) {
+          setState((prev) => ({ ...prev, isLoading: true, error: null }));
+          pendingChunkRef.current = chunkIndex;
+          try {
+            await onChunkNeeded(chunkIndex);
+            // Chunk will be loaded when chunks prop updates (see useEffect below)
+            return;
+          } catch (error) {
+            pendingChunkRef.current = null;
+            setState((prev) => ({ ...prev, isLoading: false, error: 'Failed to load chunk' }));
+            return;
+          }
+        }
+        return;
+      }
 
-    try {
-      const audioUrl = `${API_URL}/tts/audio/${chunk.id}`;
-      audioRef.current.src = audioUrl;
-      await audioRef.current.load();
+      const chunk = chunks[chunkIndex];
+      setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-      setState(prev => ({
-        ...prev,
-        currentChunkIndex: chunkIndex,
-        duration: chunk.audioDuration,
-        isLoading: false,
-      }));
+      try {
+        const audioUrl = `${API_URL}/tts/audio/${chunk.id}`;
+        audioRef.current.src = audioUrl;
+        await audioRef.current.load();
 
-      onChunkChange?.(chunkIndex);
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: 'Failed to load audio',
-      }));
-    }
-  }, [chunks, onChunkChange]);
+        setState((prev) => ({
+          ...prev,
+          currentChunkIndex: chunkIndex,
+          duration: chunk.audioDuration,
+          isLoading: false,
+        }));
+
+        onChunkChange?.(chunkIndex);
+      } catch (error) {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: 'Failed to load audio',
+        }));
+      }
+    },
+    [chunks, onChunkChange, onChunkNeeded]
+  );
 
   // Play/Pause
   const togglePlay = useCallback(async () => {
@@ -110,7 +134,7 @@ export function useAudioPlayer({
     } else {
       try {
         await audioRef.current.play();
-        setState(prev => ({ ...prev, isPlaying: true }));
+        setState((prev) => ({ ...prev, isPlaying: true }));
       } catch (error) {
         console.error('Playback error:', error);
       }
@@ -121,21 +145,21 @@ export function useAudioPlayer({
   const seek = useCallback((time: number) => {
     if (!audioRef.current) return;
     audioRef.current.currentTime = time;
-    setState(prev => ({ ...prev, currentTime: time }));
+    setState((prev) => ({ ...prev, currentTime: time }));
   }, []);
 
   // Set speed
   const setSpeed = useCallback((speed: number) => {
     if (!audioRef.current) return;
     audioRef.current.playbackRate = speed;
-    setState(prev => ({ ...prev, speed }));
+    setState((prev) => ({ ...prev, speed }));
   }, []);
 
   // Set volume
   const setVolume = useCallback((volume: number) => {
     if (!audioRef.current) return;
     audioRef.current.volume = volume;
-    setState(prev => ({ ...prev, volume }));
+    setState((prev) => ({ ...prev, volume }));
   }, []);
 
   // Next chunk
@@ -158,31 +182,31 @@ export function useAudioPlayer({
     if (!audio) return;
 
     const handleTimeUpdate = () => {
-      setState(prev => ({ ...prev, currentTime: audio.currentTime }));
+      setState((prev) => ({ ...prev, currentTime: audio.currentTime }));
 
       // Calculate global position
       const currentChunk = chunks[state.currentChunkIndex];
       if (currentChunk && onPositionChange) {
         const chunkProgress = audio.currentTime / currentChunk.audioDuration;
         const chunkLength = currentChunk.endPosition - currentChunk.startPosition;
-        const position = currentChunk.startPosition + (chunkProgress * chunkLength);
+        const position = currentChunk.startPosition + chunkProgress * chunkLength;
         onPositionChange(audio.currentTime, currentChunk.id);
       }
     };
 
     const handleDurationChange = () => {
-      setState(prev => ({ ...prev, duration: audio.duration }));
+      setState((prev) => ({ ...prev, duration: audio.duration }));
     };
 
     const handleProgress = () => {
       if (audio.buffered.length > 0) {
         const buffered = audio.buffered.end(audio.buffered.length - 1);
-        setState(prev => ({ ...prev, buffered }));
+        setState((prev) => ({ ...prev, buffered }));
       }
     };
 
     const handleEnded = () => {
-      setState(prev => ({ ...prev, isPlaying: false }));
+      setState((prev) => ({ ...prev, isPlaying: false }));
       // Auto-play next chunk
       if (state.currentChunkIndex < chunks.length - 1) {
         nextChunk();
@@ -193,15 +217,15 @@ export function useAudioPlayer({
     };
 
     const handlePlay = () => {
-      setState(prev => ({ ...prev, isPlaying: true }));
+      setState((prev) => ({ ...prev, isPlaying: true }));
     };
 
     const handlePause = () => {
-      setState(prev => ({ ...prev, isPlaying: false }));
+      setState((prev) => ({ ...prev, isPlaying: false }));
     };
 
     const handleError = () => {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isPlaying: false,
         error: 'Playback error occurred',
@@ -227,13 +251,22 @@ export function useAudioPlayer({
     };
   }, [chunks, state.currentChunkIndex, onPositionChange, nextChunk]);
 
+  // Load pending chunk when it becomes available after on-demand generation
+  useEffect(() => {
+    const pendingIndex = pendingChunkRef.current;
+    if (pendingIndex !== null && chunks[pendingIndex]) {
+      pendingChunkRef.current = null;
+      loadChunk(pendingIndex);
+    }
+  }, [chunks, loadChunk]);
+
   // Load initial chunk (or restored chunk)
   useEffect(() => {
     if (chunks.length > 0 && !audioRef.current?.src) {
       // Find initial chunk index if we have an initialChunkId
       let chunkIndex = 0;
       if (initialChunkId) {
-        const foundIndex = chunks.findIndex(c => c.id === initialChunkId);
+        const foundIndex = chunks.findIndex((c) => c.id === initialChunkId);
         if (foundIndex !== -1) {
           chunkIndex = foundIndex;
         }
@@ -246,7 +279,7 @@ export function useAudioPlayer({
         const seekWhenReady = () => {
           if (audioRef.current && audioRef.current.readyState >= 1) {
             audioRef.current.currentTime = initialTime;
-            setState(prev => ({ ...prev, currentTime: initialTime }));
+            setState((prev) => ({ ...prev, currentTime: initialTime }));
           } else if (audioRef.current) {
             setTimeout(seekWhenReady, 100);
           }

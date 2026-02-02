@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useBook, useBookStructure, useChapter } from '@/lib/hooks/use-books';
-import { useGenerateAudio, useAudioChunks } from '@/lib/hooks/use-tts';
+import { useGenerateAudio, useAudioChunks, useGenerateChunk } from '@/lib/hooks/use-tts';
 import { useProgress } from '@/lib/hooks/use-progress';
 import { useSettingsStore } from '@/lib/stores/settings-store';
 import { ChapterNav } from '@/components/reader/chapter-nav';
@@ -34,6 +34,7 @@ export default function ReaderPage() {
   const { progress, updateProgress, saveNow } = useProgress(bookId);
   const { data: chapter, isLoading: chapterLoading } = useChapter(bookId, currentChapter);
   const { generate, isGenerating } = useGenerateAudio();
+  const { generateChunk } = useGenerateChunk();
   const { tts } = useSettingsStore();
 
   // Get chapter ID from structure
@@ -67,6 +68,22 @@ export default function ReaderPage() {
       });
     },
     [currentChapter, chapterId, updateProgress]
+  );
+
+  // On-demand chunk generation when a chunk is needed but not yet generated
+  const handleChunkNeeded = useCallback(
+    async (chunkIndex: number) => {
+      if (!chapterId) return;
+      await generateChunk({
+        bookId,
+        chapterId,
+        chunkIndex,
+        voiceId: tts.voiceId,
+        settings: { speed: tts.speed, temperature: tts.temperature },
+      });
+      await refetchChunks();
+    },
+    [bookId, chapterId, generateChunk, refetchChunks, tts.voiceId, tts.speed, tts.temperature]
   );
 
   useEffect(() => {
@@ -138,7 +155,17 @@ export default function ReaderPage() {
     };
 
     generateAudioIfNeeded();
-  }, [mode, chapterId, audioChunks, generate, bookId, refetchChunks, tts.voiceId, tts.speed, tts.temperature]);
+  }, [
+    mode,
+    chapterId,
+    audioChunks,
+    generate,
+    bookId,
+    refetchChunks,
+    tts.voiceId,
+    tts.speed,
+    tts.temperature,
+  ]);
 
   if (authLoading || bookLoading) {
     return (
@@ -270,7 +297,11 @@ export default function ReaderPage() {
           onScrollProgress={handleScrollProgress}
           enableAutoScroll={mode === 'listening'}
           currentWordIndex={
-            mode === 'listening' && audioChunks && audioChunks.length > 0 && currentAudioChunk && chapter
+            mode === 'listening' &&
+            audioChunks &&
+            audioChunks.length > 0 &&
+            currentAudioChunk &&
+            chapter
               ? (() => {
                   const result = getCurrentWord(
                     chapter.paragraphs?.map((p: any) => p.text).join('\n\n') || '',
@@ -286,10 +317,14 @@ export default function ReaderPage() {
 
                   // Convert global character position to chapter-relative
                   const chapterStartPosition = chapter.startPosition || 0;
-                  const chapterRelativeCharPosition = Math.max(0, result.charPosition - chapterStartPosition);
+                  const chapterRelativeCharPosition = Math.max(
+                    0,
+                    result.charPosition - chapterStartPosition
+                  );
 
                   // Calculate word index from chapter-relative position
-                  const chapterText = chapter.paragraphs?.map((p: any) => p.text).join('\n\n') || '';
+                  const chapterText =
+                    chapter.paragraphs?.map((p: any) => p.text).join('\n\n') || '';
                   const words = chapterText.split(/(\s+)/);
                   let currentPos = 0;
                   let wordIndex = 0;
@@ -316,8 +351,12 @@ export default function ReaderPage() {
             <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-[hsl(var(--reader-bg))]/95 backdrop-blur-xl border border-[hsl(var(--reader-text))]/10 shadow-2xl">
               <div className="w-5 h-5 border-2 border-[hsl(var(--reader-accent))]/20 border-t-[hsl(var(--reader-accent))] rounded-full animate-spin" />
               <div className="flex flex-col">
-                <p className="text-sm font-semibold text-[hsl(var(--reader-text))]">Preparing audio...</p>
-                <p className="text-xs text-[hsl(var(--reader-text))]/50">This will only take a moment</p>
+                <p className="text-sm font-semibold text-[hsl(var(--reader-text))]">
+                  Preparing audio...
+                </p>
+                <p className="text-xs text-[hsl(var(--reader-text))]/50">
+                  This will only take a moment
+                </p>
               </div>
             </div>
           </div>
@@ -347,6 +386,7 @@ export default function ReaderPage() {
           chapterTitle={currentChapterData?.title || `Chapter ${currentChapter + 1}`}
           chunks={audioChunks}
           onPositionChange={handlePositionChange}
+          onChunkNeeded={handleChunkNeeded}
           initialChunkId={currentAudioChunk || undefined}
           initialTime={currentAudioTime || undefined}
           book={book}
