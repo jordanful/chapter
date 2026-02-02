@@ -9,6 +9,7 @@ import { useTTS } from '@/lib/hooks/use-tts';
 import { useSettingsStore, type Theme, type FontSize } from '@/lib/stores/settings-store';
 import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
+import { LibraryFolders } from '@/components/library/library-folders';
 import { ArrowLeft, Volume2, ChevronDown, Check, Sun, Moon, BookOpen } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -138,6 +139,11 @@ export default function SettingsPage() {
               )}
             </div>
           </div>
+        </section>
+
+        {/* Library Section */}
+        <section className="mb-8">
+          <LibraryFolders />
         </section>
 
         {/* TTS Section */}

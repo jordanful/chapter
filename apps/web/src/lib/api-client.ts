@@ -6,6 +6,11 @@ import type {
   UserSettings,
   KokoroVoice,
   AlternativeCover,
+  WatchedFolder,
+  CreateWatchedFolderRequest,
+  UpdateWatchedFolderRequest,
+  ScanResult,
+  FolderScanStatus,
 } from '@chapter/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
@@ -259,6 +264,50 @@ class APIClient {
       method: 'PUT',
       body: JSON.stringify(config),
     });
+  }
+
+  // Library
+  async getWatchedFolders(): Promise<WatchedFolder[]> {
+    return this.request<WatchedFolder[]>('/library/folders');
+  }
+
+  async createWatchedFolder(data: CreateWatchedFolderRequest): Promise<WatchedFolder> {
+    return this.request<WatchedFolder>('/library/folders', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateWatchedFolder(
+    folderId: string,
+    data: UpdateWatchedFolderRequest
+  ): Promise<WatchedFolder> {
+    return this.request<WatchedFolder>(`/library/folders/${folderId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteWatchedFolder(folderId: string): Promise<void> {
+    await this.request<void>(`/library/folders/${folderId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async scanFolder(folderId: string): Promise<ScanResult> {
+    return this.request<ScanResult>(`/library/folders/${folderId}/scan`, {
+      method: 'POST',
+    });
+  }
+
+  async scanAllFolders(): Promise<ScanResult[]> {
+    return this.request<ScanResult[]>('/library/scan-all', {
+      method: 'POST',
+    });
+  }
+
+  async getFolderScanStatus(folderId: string): Promise<FolderScanStatus> {
+    return this.request<FolderScanStatus>(`/library/folders/${folderId}/status`);
   }
 }
 

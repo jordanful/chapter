@@ -312,7 +312,7 @@ export default function LibraryPage() {
                 Your library is empty
               </p>
               <p className="text-white/60 mb-6">
-                Drag and drop EPUBs here, or click to upload
+                Drag and drop EPUBs here, click to upload, or add a folder in Settings to auto-import
               </p>
               <UploadButton variant="shelf" size="lg" />
             </div>

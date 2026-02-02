@@ -152,6 +152,9 @@ All configuration is done through environment variables in `docker/.env`:
 | `POSTGRES_PASSWORD` | `changeme` | Database password (change this!) |
 | `JWT_SECRET` | — | Secret for signing tokens (change this!) |
 | `AUDIO_CACHE_MAX_SIZE` | `10737418240` | Max audio cache size in bytes (10 GB) |
+| `MAX_WATCHED_FOLDERS` | `20` | Max library folders per user |
+| `SCAN_TIMEOUT` | `300000` | Folder scan timeout in milliseconds (5 min) |
+| `MAX_SCAN_DEPTH` | `10` | Max directory depth when scanning folders |
 
 ### Server Configuration
 
@@ -166,6 +169,75 @@ environment:
   # Storage
   BOOK_STORAGE_PATH: /app/storage/books
   AUDIO_CACHE_PATH: /app/storage/audio
+
+  # Library folder scanning (optional)
+  MAX_WATCHED_FOLDERS: 20        # Max folders per user
+  SCAN_TIMEOUT: 300000           # Scan timeout in ms (5 minutes)
+  MAX_SCAN_DEPTH: 10             # Max directory depth
+```
+
+### Library Folders
+
+Chapter can automatically import books from filesystem folders (similar to Plex or Calibre). This is useful if you:
+- Already have an organized book collection
+- Sync books from another device (e.g., NAS, cloud storage)
+- Want to add books without uploading through the UI
+
+#### Setup
+
+1. **Mount your book folder** in `docker-compose.yml`:
+
+```yaml
+server:
+  volumes:
+    - chapter_data:/app/data
+    # Mount your books folder
+    - /path/on/host/books:/library/books:ro
+```
+
+**Important:**
+- Use container paths (e.g., `/library/books`), not host paths
+- Mount as read-only (`:ro`) to prevent accidental modifications
+- You can mount multiple folders with different names
+
+2. **Restart the server**:
+
+```bash
+docker compose down
+docker compose up -d
+```
+
+3. **Configure in the UI**:
+- Navigate to Settings → Library
+- Click "Add Folder"
+- Enter the container path (e.g., `/library/books`)
+- Optionally add a friendly name
+- Click "Scan Now" to import books
+
+#### How It Works
+
+- Books are **copied** to Chapter's storage (not referenced in place)
+- Deduplication via SHA256 hash (same book won't be imported twice)
+- Scanning is manual (click "Scan Now" or "Scan All")
+- Books remain in your library even if you remove the watched folder
+
+#### Example Scenarios
+
+**Synology NAS:**
+```yaml
+- /volume1/Books:/library/books:ro
+```
+
+**External drive:**
+```yaml
+- /mnt/external/ebooks:/library/books:ro
+```
+
+**Multiple folders:**
+```yaml
+- /media/fiction:/library/fiction:ro
+- /media/nonfiction:/library/nonfiction:ro
+- /media/audiobooks:/library/audiobooks:ro
 ```
 
 ### Available TTS Voices

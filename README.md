@@ -23,6 +23,7 @@ Open **http://localhost** and create your account.
 - **Word-level sync** — Your position syncs precisely between modes
 - **Local AI voices** — High-quality TTS via [Kokoro](https://github.com/hexgrad/kokoro), no API costs
 - **9 voices** — American and British, male and female
+- **Library folders** — Auto-import books from filesystem folders (like Plex/Calibre)
 - **Multi-user** — Each user has their own library and progress
 - **Self-hosted** — Your books, your server, your data
 
@@ -42,6 +43,11 @@ JWT_SECRET=your-secure-secret
 
 # Audio cache size in bytes (default: 10GB)
 AUDIO_CACHE_MAX_SIZE=10737418240
+
+# Library folder limits (optional)
+MAX_WATCHED_FOLDERS=20        # Max folders per user (default: 20)
+SCAN_TIMEOUT=300000           # Scan timeout in ms (default: 5 min)
+MAX_SCAN_DEPTH=10             # Max directory depth (default: 10)
 ```
 
 ### Custom domain with HTTPS
@@ -77,6 +83,25 @@ kokoro:
 ```
 
 Requires [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
+
+### Library folders
+
+Mount external book folders to auto-import EPUBs. Add to `docker-compose.yml` under `server.volumes`:
+
+```yaml
+server:
+  volumes:
+    - chapter_data:/app/data
+    - /path/to/your/books:/library/books:ro  # Read-only mount
+```
+
+Then in Settings → Library, add `/library/books` as a watched folder. Chapter will scan and import books automatically.
+
+**Notes:**
+- Use container paths (e.g., `/library/books`), not host paths
+- Mount as read-only (`:ro`) for safety
+- Books are copied to internal storage (supports deduplication across folders)
+- Multiple folders can be mounted and watched
 
 ## Commands
 

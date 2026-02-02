@@ -28,6 +28,7 @@ model User {
   // Relations
   userBooks        UserBook[]
   readingProgress  ReadingProgress[]
+  watchedFolders   WatchedFolder[]
 
   @@index([email])
 }
@@ -232,4 +233,28 @@ model UserBook {
   @@unique([userId, bookId])
   @@index([userId])
   @@index([bookId])
+}
+
+model WatchedFolder {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  path      String   // Absolute filesystem path
+  name      String?  // Optional friendly name
+  isActive  Boolean  @default(true)
+
+  lastScanAt       DateTime?
+  lastScanStatus   String   @default("idle") // idle, scanning, error
+  lastScanError    String?
+  booksFound       Int      @default(0)
+  totalScans       Int      @default(0)
+  booksImported    Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, path])
+  @@index([userId])
+  @@index([isActive])
 }

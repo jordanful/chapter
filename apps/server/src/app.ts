@@ -7,6 +7,7 @@ import { config } from './core/config';
 // Module routes
 import { authRoutes } from './modules/auth/auth.routes';
 import { booksRoutes } from './modules/books/books.routes';
+import { libraryRoutes } from './modules/library/library.routes';
 import { progressRoutes } from './modules/progress/progress.routes';
 import { usersRoutes } from './modules/users/users.routes';
 import { ttsRoutes } from './modules/tts/tts.routes';
@@ -42,6 +43,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Register routes
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(booksRoutes, { prefix: '/api/books' });
+  await app.register(libraryRoutes, { prefix: '/api/library' });
   await app.register(progressRoutes, { prefix: '/api/progress' });
   await app.register(usersRoutes, { prefix: '/api/users' });
   await app.register(ttsRoutes, { prefix: '/api/tts' });

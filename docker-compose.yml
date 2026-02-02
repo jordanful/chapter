@@ -64,6 +64,8 @@ services:
       TTS_DEFAULT_VOICE: af_bella
     volumes:
       - chapter_data:/app/data
+      # Optional: Mount external book folders for auto-import
+      # - /path/to/your/books:/library/books:ro
     restart: unless-stopped
 
   web:
