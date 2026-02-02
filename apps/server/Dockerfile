@@ -45,6 +45,7 @@ COPY --from=builder --chown=chapter:nodejs /app/apps/server/dist ./dist
 COPY --from=builder --chown=chapter:nodejs /app/apps/server/node_modules ./node_modules
 COPY --from=builder --chown=chapter:nodejs /app/apps/server/package.json ./
 COPY --from=builder --chown=chapter:nodejs /app/apps/server/prisma ./prisma
+COPY --from=builder --chown=chapter:nodejs /app/apps/server/seed-books ./seed-books
 
 # Create data directory (SQLite database, books, audio cache)
 RUN mkdir -p /app/data/books /app/data/audio && chown -R chapter:nodejs /app/data
