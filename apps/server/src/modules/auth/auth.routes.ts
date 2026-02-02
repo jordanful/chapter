@@ -1,6 +1,8 @@
 import { FastifyPluginAsync } from 'fastify';
 import { authService } from './auth.service';
+import { seedService } from '../books/seed.service';
 import { z } from 'zod';
+import { UserRegistration, UserLogin } from '@chapter/types';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -19,9 +21,15 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     try {
       const body = registerSchema.parse(request.body);
 
-      const result = await authService.register(body, (payload) =>
+      const result = await authService.register(body as UserRegistration, (payload) =>
         app.jwt.sign(payload, { expiresIn: '7d' })
       );
+
+      // Seed books for new user (async, don't block response)
+      const userId = (result.user as any).id;
+      seedService.seedBooksForUser(userId).catch((error) => {
+        console.error('Failed to seed books for new user:', error);
+      });
 
       return reply.code(201).send(result);
     } catch (error) {
@@ -39,7 +47,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     try {
       const body = loginSchema.parse(request.body);
 
-      const result = await authService.login(body, (payload) =>
+      const result = await authService.login(body as UserLogin, (payload) =>
         app.jwt.sign(payload, { expiresIn: '7d' })
       );
 

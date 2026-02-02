@@ -25,7 +25,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages ./packages
 COPY --from=deps /app/apps/server ./apps/server
-COPY pnpm-workspace.yaml package.json ./
+COPY pnpm-workspace.yaml package.json tsconfig.json ./
 
 # Build the app
 RUN cd apps/server && pnpm build
