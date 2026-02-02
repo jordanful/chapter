@@ -1,0 +1,5 @@
+pnpm lint-staged
+
+# Type check the server (catches most errors)
+echo "Type checking..."
+cd apps/server && pnpm tsc --noEmit
