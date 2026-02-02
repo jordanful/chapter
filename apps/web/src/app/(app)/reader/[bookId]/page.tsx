@@ -77,14 +77,6 @@ export default function ReaderPage() {
   // Restore progress on mount
   useEffect(() => {
     if (progress && !isProgressRestored) {
-      console.log('[Progress Restore]', {
-        mode: progress.mode,
-        chapterIndex: progress.chapterIndex,
-        audioTimestamp: progress.audioTimestamp,
-        audioChunkId: progress.audioChunkId,
-        scrollPosition: progress.scrollPosition,
-      });
-
       setCurrentChapter(progress.chapterIndex);
       setCurrentScrollProgress(progress.scrollPosition || 0);
       const restoredMode = progress.mode === 'audio' ? 'listening' : 'reading';
@@ -92,10 +84,6 @@ export default function ReaderPage() {
 
       // Restore audio position if in listening mode
       if (restoredMode === 'listening' && progress.audioTimestamp !== undefined) {
-        console.log('[Audio Position Restore]', {
-          audioTimestamp: progress.audioTimestamp,
-          audioChunkId: progress.audioChunkId,
-        });
         setCurrentAudioTime(progress.audioTimestamp);
         if (progress.audioChunkId) {
           setCurrentAudioChunk(progress.audioChunkId);
@@ -297,16 +285,6 @@ export default function ReaderPage() {
                       }
                       currentPos += wordLength;
                     }
-
-                    console.log('[Word Tracking]', {
-                      chunkId: currentAudioChunk,
-                      currentTime: currentAudioTime,
-                      globalCharPos: result.charPosition,
-                      chapterStartPos: chapterStartPosition,
-                      chapterRelativePos: chapterRelativeCharPosition,
-                      wordIndex: wordIndex,
-                      totalChunks: audioChunks.length,
-                    });
 
                     return wordIndex;
                   })()
