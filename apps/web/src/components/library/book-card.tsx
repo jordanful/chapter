@@ -25,7 +25,7 @@ function getBookColor(title: string): string {
 
   let hash = 0;
   for (let i = 0; i < title.length; i++) {
-    hash = ((hash << 5) - hash) + title.charCodeAt(i);
+    hash = (hash << 5) - hash + title.charCodeAt(i);
     hash = hash & hash;
   }
 
@@ -49,38 +49,41 @@ export function BookCard({ book }: BookCardProps) {
   const [showMetadataEditor, setShowMetadataEditor] = useState(false);
   const { downloadBook, isDownloading, progress } = useDownload();
 
-  const loadCover = useCallback(async (forceReload = false) => {
-    const bookId = book.id;
-    const coverPath = book.coverPath;
+  const loadCover = useCallback(
+    async (forceReload = false) => {
+      const bookId = book.id;
+      const coverPath = book.coverPath;
 
-    try {
-      const offlineCover = await offlineStorage.getCover(bookId);
-      if (offlineCover) {
-        const url = URL.createObjectURL(offlineCover);
-        setCoverUrl(prev => {
-          if (prev) URL.revokeObjectURL(prev);
-          return url;
-        });
-        return;
-      }
+      try {
+        const offlineCover = await offlineStorage.getCover(bookId);
+        if (offlineCover) {
+          const url = URL.createObjectURL(offlineCover);
+          setCoverUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return url;
+          });
+          return;
+        }
 
-      if (coverPath) {
-        const blob = await apiClient.getCover(bookId);
-        const url = URL.createObjectURL(blob);
-        setCoverUrl(prev => {
-          if (prev) URL.revokeObjectURL(prev);
-          return url;
-        });
-      } else if (forceReload) {
-        setCoverUrl(prev => {
-          if (prev) URL.revokeObjectURL(prev);
-          return null;
-        });
+        if (coverPath) {
+          const blob = await apiClient.getCover(bookId);
+          const url = URL.createObjectURL(blob);
+          setCoverUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return url;
+          });
+        } else if (forceReload) {
+          setCoverUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return null;
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load cover for book:', bookId, error);
       }
-    } catch (error) {
-      console.error('Failed to load cover for book:', bookId, error);
-    }
-  }, [book.id, book.coverPath]);
+    },
+    [book.id, book.coverPath]
+  );
 
   const checkDownloaded = useCallback(async () => {
     const downloaded = await offlineStorage.isBookDownloaded(book.id);
@@ -97,7 +100,7 @@ export function BookCard({ book }: BookCardProps) {
   // Cleanup on unmount only
   useEffect(() => {
     return () => {
-      setCoverUrl(prev => {
+      setCoverUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return null;
       });
@@ -116,15 +119,18 @@ export function BookCard({ book }: BookCardProps) {
     }
   };
 
-  const handleSaveMetadata = useCallback(async (metadata: any) => {
-    const bookId = book.id;
-    console.log('Saving metadata for book:', bookId, metadata);
-    await apiClient.updateBookMetadata(bookId, metadata);
-    // Wait for the books query to refetch so we have fresh data
-    await queryClient.refetchQueries({ queryKey: ['books'] });
-    // Force reload cover since it may have been updated
-    loadCover(true);
-  }, [book.id, queryClient, loadCover]);
+  const handleSaveMetadata = useCallback(
+    async (metadata: any) => {
+      const bookId = book.id;
+      console.log('Saving metadata for book:', bookId, metadata);
+      await apiClient.updateBookMetadata(bookId, metadata);
+      // Wait for the books query to refetch so we have fresh data
+      await queryClient.refetchQueries({ queryKey: ['books'] });
+      // Force reload cover since it may have been updated
+      loadCover(true);
+    },
+    [book.id, queryClient, loadCover]
+  );
 
   return (
     <div className="group w-full">
@@ -141,13 +147,11 @@ export function BookCard({ book }: BookCardProps) {
           <div className="absolute inset-y-1 right-0 w-1 bg-gradient-to-l from-stone-300 to-stone-100 z-10 pointer-events-none rounded-r-sm" />
 
           {coverUrl ? (
-            <img
-              src={coverUrl}
-              alt={book.title}
-              className="w-full h-full object-cover"
-            />
+            <img src={coverUrl} alt={book.title} className="w-full h-full object-cover" />
           ) : (
-            <div className={`w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br ${getBookColor(book.title)}`}>
+            <div
+              className={`w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br ${getBookColor(book.title)}`}
+            >
               {/* Decorative top border */}
               <div className="absolute top-3 left-4 right-4 h-px bg-white/20" />
               <div className="absolute top-4 left-4 right-4 h-px bg-white/10" />
@@ -162,9 +166,7 @@ export function BookCard({ book }: BookCardProps) {
 
               {/* Author */}
               {book.author && (
-                <p className="text-white/60 text-xs text-center mt-2 line-clamp-2">
-                  {book.author}
-                </p>
+                <p className="text-white/60 text-xs text-center mt-2 line-clamp-2">{book.author}</p>
               )}
 
               {/* Decorative bottom border */}
@@ -173,15 +175,26 @@ export function BookCard({ book }: BookCardProps) {
             </div>
           )}
 
+          {/* Progress bar */}
+          {book.progress > 0 && (
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
+              <div
+                className="h-full bg-white/90 transition-all duration-500"
+                style={{ width: `${book.progress}%` }}
+              />
+            </div>
+          )}
+
           {/* Hover overlay with book info */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3 pb-4">
             <h3 className="font-medium text-sm text-white line-clamp-2 leading-snug drop-shadow-lg">
               {book.title}
             </h3>
             {book.author && (
-              <p className="text-xs text-white/70 line-clamp-1 mt-1">
-                {book.author}
-              </p>
+              <p className="text-xs text-white/70 line-clamp-1 mt-1">{book.author}</p>
+            )}
+            {book.progress > 0 && (
+              <p className="text-xs text-white/60 mt-1.5">{Math.round(book.progress)}% complete</p>
             )}
           </div>
 

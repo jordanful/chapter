@@ -23,27 +23,27 @@ function smartMatch(book: any, query: string): boolean {
   const queryWords = q.split(/\s+/).filter(Boolean);
 
   // Check if all query words match somewhere in title or author
-  return queryWords.every(word => {
+  return queryWords.every((word) => {
     // Direct match
     if (title.includes(word) || author.includes(word)) return true;
 
     // Handle common abbreviations and variations
     // "vol" matches "volume", "pt" matches "part", etc.
     const expansions: Record<string, string[]> = {
-      'vol': ['volume'],
-      'pt': ['part'],
-      'ch': ['chapter'],
-      'bk': ['book'],
-      'ed': ['edition', 'edited'],
-      'dr': ['doctor'],
-      'mr': ['mister'],
-      'mrs': ['missus'],
-      'st': ['saint'],
+      vol: ['volume'],
+      pt: ['part'],
+      ch: ['chapter'],
+      bk: ['book'],
+      ed: ['edition', 'edited'],
+      dr: ['doctor'],
+      mr: ['mister'],
+      mrs: ['missus'],
+      st: ['saint'],
     };
 
     const expanded = expansions[word];
     if (expanded) {
-      return expanded.some(exp => title.includes(exp) || author.includes(exp));
+      return expanded.some((exp) => title.includes(exp) || author.includes(exp));
     }
 
     return false;
@@ -53,7 +53,13 @@ function smartMatch(book: any, query: string): boolean {
 export default function LibraryPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, user, logout } = useAuth();
-  const { books, isLoading: booksLoading, uploadingBooks, dismissUploadError, uploadBooks } = useBooks();
+  const {
+    books,
+    isLoading: booksLoading,
+    uploadingBooks,
+    dismissUploadError,
+    uploadBooks,
+  } = useBooks();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'added' | 'title' | 'author'>('added');
   const [isDragging, setIsDragging] = useState(false);
@@ -62,7 +68,7 @@ export default function LibraryPage() {
   // Filter and sort books
   const filteredBooks = useMemo(() => {
     let result = searchQuery.trim()
-      ? books.filter(book => smartMatch(book, searchQuery))
+      ? books.filter((book) => smartMatch(book, searchQuery))
       : [...books];
 
     // Sort books
@@ -97,7 +103,7 @@ export default function LibraryPage() {
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragCounter(prev => prev + 1);
+    setDragCounter((prev) => prev + 1);
     if (e.dataTransfer.types.includes('Files')) {
       setIsDragging(true);
     }
@@ -106,7 +112,7 @@ export default function LibraryPage() {
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragCounter(prev => {
+    setDragCounter((prev) => {
       const newCount = prev - 1;
       if (newCount === 0) {
         setIsDragging(false);
@@ -120,35 +126,36 @@ export default function LibraryPage() {
     e.stopPropagation();
   }, []);
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    setDragCounter(0);
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      setDragCounter(0);
 
-    const files = Array.from(e.dataTransfer.files);
-    const epubFiles = files.filter(file =>
-      file.name.toLowerCase().endsWith('.epub')
-    );
+      const files = Array.from(e.dataTransfer.files);
+      const epubFiles = files.filter((file) => file.name.toLowerCase().endsWith('.epub'));
 
-    if (epubFiles.length === 0) {
-      if (files.length > 0) {
-        alert('Please drop EPUB files only');
+      if (epubFiles.length === 0) {
+        if (files.length > 0) {
+          alert('Please drop EPUB files only');
+        }
+        return;
       }
-      return;
-    }
 
-    const nonEpubCount = files.length - epubFiles.length;
-    if (nonEpubCount > 0) {
-      alert(`${nonEpubCount} non-EPUB file(s) were skipped`);
-    }
+      const nonEpubCount = files.length - epubFiles.length;
+      if (nonEpubCount > 0) {
+        alert(`${nonEpubCount} non-EPUB file(s) were skipped`);
+      }
 
-    try {
-      await uploadBooks(epubFiles);
-    } catch (error) {
-      console.error('Upload failed:', error);
-    }
-  }, [uploadBooks]);
+      try {
+        await uploadBooks(epubFiles);
+      } catch (error) {
+        console.error('Upload failed:', error);
+      }
+    },
+    [uploadBooks]
+  );
 
   // Combine uploading and filtered books
   const allItems = useMemo(() => {
@@ -158,11 +165,7 @@ export default function LibraryPage() {
     if (!searchQuery.trim()) {
       uploadingBooks.forEach((upload) => {
         items.push(
-          <UploadingBookCard
-            key={upload.id}
-            upload={upload}
-            onDismiss={dismissUploadError}
-          />
+          <UploadingBookCard key={upload.id} upload={upload} onDismiss={dismissUploadError} />
         );
       });
     }
@@ -177,7 +180,10 @@ export default function LibraryPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'url(/wood.png) repeat' }}>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'url(/wood.png) repeat' }}
+      >
         <p className="text-white/80 text-lg">Loading...</p>
       </div>
     );
@@ -206,80 +212,82 @@ export default function LibraryPage() {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-gradient-to-b from-black/40 to-transparent backdrop-blur-sm">
-        <div className="container mx-auto px-4 h-14 flex items-center justify-center gap-2">
-          {/* Search and sort */}
-          {books.length > 0 && (
-            <div className="flex items-center gap-2 flex-1 max-w-xl">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
-                <input
-                  type="text"
-                  placeholder="Search books..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-10 pl-10 pr-8 rounded-lg bg-white/10 border border-white/10 text-white placeholder:text-white/40 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-transparent transition-all"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+      <header className="sticky top-0 z-20 bg-gradient-to-b from-black/60 via-black/40 to-transparent backdrop-blur-xl border-b border-white/5">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
+            {/* Search and sort */}
+            {books.length > 0 && (
+              <div className="flex items-center gap-3 flex-1 max-w-2xl">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-white/40" />
+                  <input
+                    type="text"
+                    placeholder="Search books..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-11 pl-11 pr-10 rounded-full bg-white/5 text-white placeholder:text-white/40 text-sm focus:outline-none focus:bg-white/10 transition-all duration-300 border border-white/0 focus:border-white/10"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-white/40 hover:text-white/80 transition-all duration-300"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <Select.Root
+                  value={sortBy}
+                  onValueChange={(value) => value && setSortBy(value as any)}
+                >
+                  <Select.Trigger className="flex items-center gap-2 h-11 px-4 rounded-full bg-white/5 hover:bg-white/10 text-white/90 text-sm transition-all duration-300 cursor-pointer shrink-0 border border-white/0 hover:border-white/10">
+                    <Select.Value />
+                    <Select.Icon>
+                      <ChevronDown className="w-4 h-4 text-white/50" />
+                    </Select.Icon>
+                  </Select.Trigger>
+                  <Select.Portal>
+                    <Select.Positioner sideOffset={4} className="z-50">
+                      <Select.Popup className="min-w-[160px] rounded-2xl border border-white/10 bg-black/95 backdrop-blur-xl p-2 shadow-2xl">
+                        {[
+                          { value: 'added', label: 'Date added' },
+                          { value: 'recent', label: 'Recently read' },
+                          { value: 'title', label: 'Title' },
+                          { value: 'author', label: 'Author' },
+                        ].map((option) => (
+                          <Select.Item
+                            key={option.value}
+                            value={option.value}
+                            className="flex items-center justify-between px-4 py-2.5 rounded-xl cursor-pointer outline-none text-sm text-white/90 data-[highlighted]:bg-white/10 transition-all duration-200"
+                          >
+                            <Select.ItemText>{option.label}</Select.ItemText>
+                            <Select.ItemIndicator>
+                              <Check className="w-4 h-4 text-white/90" />
+                            </Select.ItemIndicator>
+                          </Select.Item>
+                        ))}
+                      </Select.Popup>
+                    </Select.Positioner>
+                  </Select.Portal>
+                </Select.Root>
               </div>
-              <Select.Root
-                value={sortBy}
-                onValueChange={(value) => value && setSortBy(value as any)}
-              >
-                <Select.Trigger className="flex items-center gap-2 h-10 px-4 rounded-lg bg-white/10 border border-white/10 text-white text-sm hover:bg-white/15 transition-colors cursor-pointer shrink-0">
-                  <Select.Value />
-                  <Select.Icon>
-                    <ChevronDown className="w-4 h-4 text-white/60" />
-                  </Select.Icon>
-                </Select.Trigger>
-                <Select.Portal>
-                  <Select.Positioner sideOffset={4} className="z-50">
-                    <Select.Popup className="min-w-[140px] rounded-lg border border-white/10 bg-stone-800 p-1 shadow-xl">
-                      {[
-                        { value: 'added', label: 'Date added' },
-                        { value: 'recent', label: 'Recently read' },
-                        { value: 'title', label: 'Title' },
-                        { value: 'author', label: 'Author' },
-                      ].map((option) => (
-                        <Select.Item
-                          key={option.value}
-                          value={option.value}
-                          className="flex items-center justify-between px-3 py-2 rounded-md cursor-pointer outline-none text-sm text-white/90 data-[highlighted]:bg-white/10 transition-colors"
-                        >
-                          <Select.ItemText>{option.label}</Select.ItemText>
-                          <Select.ItemIndicator>
-                            <Check className="w-4 h-4 text-amber-400" />
-                          </Select.ItemIndicator>
-                        </Select.Item>
-                      ))}
-                    </Select.Popup>
-                  </Select.Positioner>
-                </Select.Portal>
-              </Select.Root>
-            </div>
-          )}
+            )}
 
-          <div className="flex items-center gap-2 shrink-0">
-            <UploadButton variant="shelf" />
-            <button
-              onClick={() => router.push('/settings')}
-              className="h-10 w-10 flex items-center justify-center rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-            <button
-              onClick={logout}
-              className="h-10 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/10 text-sm transition-colors hidden sm:flex items-center"
-            >
-              Sign out
-            </button>
+            <div className="flex items-center gap-3 shrink-0">
+              <UploadButton variant="shelf" />
+              <button
+                onClick={() => router.push('/settings')}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 transition-all duration-300 hover:scale-105 active:scale-95"
+              >
+                <Settings className="w-[18px] h-[18px]" />
+              </button>
+              <button
+                onClick={logout}
+                className="h-10 px-5 rounded-full bg-white/5 hover:bg-white/10 text-white/90 text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95 hidden sm:flex items-center"
+              >
+                Sign out
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -290,15 +298,11 @@ export default function LibraryPage() {
           <div className="flex flex-col items-center justify-center py-24 text-center px-4">
             <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-8 max-w-md">
               <Search className="w-12 h-12 text-white/40 mx-auto mb-4" />
-              <p className="text-xl text-white/90 mb-2">
-                No books found
-              </p>
-              <p className="text-white/60 mb-4">
-                No matches for "{searchQuery}"
-              </p>
+              <p className="text-xl text-white/90 mb-2">No books found</p>
+              <p className="text-white/60 mb-6">No matches for "{searchQuery}"</p>
               <button
                 onClick={() => setSearchQuery('')}
-                className="text-amber-300 hover:text-amber-200 text-sm font-medium transition-colors"
+                className="h-11 px-6 rounded-full bg-white/5 hover:bg-white/10 text-white/90 text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95"
               >
                 Clear search
               </button>
@@ -312,9 +316,7 @@ export default function LibraryPage() {
             {/* Floating prompt */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="pointer-events-auto text-center">
-                <p className="text-white/70 text-sm mb-3">
-                  Drop EPUBs here to get started
-                </p>
+                <p className="text-white/70 text-sm mb-3">Drop EPUBs here to get started</p>
                 <UploadButton variant="shelf" size="sm" />
               </div>
             </div>
@@ -325,13 +327,12 @@ export default function LibraryPage() {
             {searchQuery && (
               <div className="container mx-auto px-4 py-3">
                 <p className="text-white/60 text-sm">
-                  {filteredBooks.length} {filteredBooks.length === 1 ? 'book' : 'books'} matching "{searchQuery}"
+                  {filteredBooks.length} {filteredBooks.length === 1 ? 'book' : 'books'} matching "
+                  {searchQuery}"
                 </p>
               </div>
             )}
-            <Bookshelf>
-              {allItems}
-            </Bookshelf>
+            <Bookshelf>{allItems}</Bookshelf>
           </>
         )}
       </main>

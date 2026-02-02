@@ -36,7 +36,10 @@ export class BooksService {
             updatedAt: true,
             readingProgress: {
               where: { userId },
-              select: { lastReadAt: true },
+              select: {
+                lastReadAt: true,
+                percentage: true,
+              },
               take: 1,
             },
           },
@@ -55,6 +58,7 @@ export class BooksService {
       tags: ub.tags,
       addedAt: ub.addedAt,
       lastReadAt: ub.book.readingProgress[0]?.lastReadAt || null,
+      progress: ub.book.readingProgress[0]?.percentage || 0,
     }));
   }
 
@@ -194,17 +198,10 @@ export class BooksService {
     return { buffer, filename };
   }
 
-  async getAlternativeCovers(
-    userId: string,
-    bookId: string
-  ): Promise<AlternativeCover[]> {
+  async getAlternativeCovers(userId: string, bookId: string): Promise<AlternativeCover[]> {
     const book = await this.getBookById(userId, bookId);
 
-    return await openLibraryService.searchEditions(
-      book.title,
-      book.author,
-      book.isbn
-    );
+    return await openLibraryService.searchEditions(book.title, book.author, book.isbn);
   }
 
   async updateCoverFromOpenLibrary(

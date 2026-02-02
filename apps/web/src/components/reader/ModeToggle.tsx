@@ -21,18 +21,18 @@ export function ModeToggle({ mode, onModeChange, className = '' }: ModeTogglePro
       <Tabs.List className="relative inline-flex items-center p-1 bg-[hsl(var(--reader-text))]/5 backdrop-blur-sm rounded-xl border border-[hsl(var(--reader-text))]/8">
         <Tabs.Tab
           value="reading"
-          className="relative z-10 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-[13px] transition-all duration-300 outline-none text-[hsl(var(--reader-text))]/40 data-[selected]:text-[hsl(var(--reader-text))] hover:text-[hsl(var(--reader-text))]/60"
+          className="relative z-10 flex items-center justify-center sm:justify-start gap-0 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-lg font-semibold text-[13px] transition-all duration-300 outline-none text-[hsl(var(--reader-text))]/40 data-[selected]:text-[hsl(var(--reader-text))] hover:text-[hsl(var(--reader-text))]/60"
         >
           <Book className="w-4 h-4" />
-          <span className="tracking-wide">Read</span>
+          <span className="tracking-wide hidden sm:inline">Read</span>
         </Tabs.Tab>
 
         <Tabs.Tab
           value="listening"
-          className="relative z-10 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-[13px] transition-all duration-300 outline-none text-[hsl(var(--reader-text))]/40 data-[selected]:text-[hsl(var(--reader-text))] hover:text-[hsl(var(--reader-text))]/60"
+          className="relative z-10 flex items-center justify-center sm:justify-start gap-0 sm:gap-2 px-2.5 sm:px-4 py-2 rounded-lg font-semibold text-[13px] transition-all duration-300 outline-none text-[hsl(var(--reader-text))]/40 data-[selected]:text-[hsl(var(--reader-text))] hover:text-[hsl(var(--reader-text))]/60"
         >
           <Headphones className="w-4 h-4" />
-          <span className="tracking-wide">Listen</span>
+          <span className="tracking-wide hidden sm:inline">Listen</span>
         </Tabs.Tab>
 
         <Tabs.Indicator

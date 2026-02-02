@@ -193,13 +193,9 @@ export function AudioPlayer({
   };
 
   // Calculate progress percentage
-  const progressPercentage = state.duration > 0
-    ? (state.currentTime / state.duration) * 100
-    : 0;
+  const progressPercentage = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
 
-  const bufferedPercentage = state.duration > 0
-    ? (state.buffered / state.duration) * 100
-    : 0;
+  const bufferedPercentage = state.duration > 0 ? (state.buffered / state.duration) * 100 : 0;
 
   // Speed presets
   const speedPresets = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
@@ -233,19 +229,19 @@ export function AudioPlayer({
           onMouseDown={handleSeekMouseDown}
         />
 
-        <div className="max-w-5xl mx-auto px-6 py-5">
-          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-8">
+        <div className="max-w-5xl mx-auto px-3 sm:px-6 py-3 sm:py-5">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-8">
             {/* Left: Back button + Book info */}
-            <div className="flex items-center gap-4 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <button
                 onClick={onBack}
-                className="group flex items-center justify-center w-10 h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
+                className="group flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95 shrink-0"
                 aria-label="Back to library"
               >
-                <ArrowLeft className="w-[18px] h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+                <ArrowLeft className="w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
               </button>
 
-              <div className="flex flex-col min-w-0 gap-1">
+              <div className="hidden sm:flex flex-col min-w-0 gap-1">
                 <h1 className="text-base font-semibold truncate text-[hsl(var(--reader-text))] tracking-tight leading-none">
                   {book?.title}
                 </h1>
@@ -256,58 +252,63 @@ export function AudioPlayer({
             </div>
 
             {/* Center: Audio playback controls */}
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-1.5 sm:gap-3">
               <button
                 onClick={() => controls.seek(Math.max(0, state.currentTime - 15))}
-                className="group flex items-center justify-center w-11 h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
+                className="group flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
                 aria-label="Skip back 15 seconds"
               >
-                <SkipBack className="w-5 h-5 text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+                <SkipBack className="w-4 h-4 sm:w-5 sm:h-5 text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
               </button>
 
               <button
                 onClick={controls.togglePlay}
                 disabled={state.isLoading}
-                className="group flex items-center justify-center w-14 h-14 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95"
+                className="group flex items-center justify-center w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95"
                 aria-label={state.isPlaying ? 'Pause' : 'Play'}
               >
                 {state.isPlaying ? (
-                  <Pause className="w-6 h-6 text-[hsl(var(--reader-text))]/70 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300 fill-current" />
+                  <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-[hsl(var(--reader-text))]/70 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300 fill-current" />
                 ) : (
-                  <Play className="w-6 h-6 text-[hsl(var(--reader-text))]/70 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300 fill-current ml-0.5" />
+                  <Play className="w-5 h-5 sm:w-6 sm:h-6 text-[hsl(var(--reader-text))]/70 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300 fill-current ml-0.5" />
                 )}
               </button>
 
               <button
                 onClick={() => controls.seek(Math.min(state.duration, state.currentTime + 15))}
-                className="group flex items-center justify-center w-11 h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
+                className="group flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
                 aria-label="Skip forward 15 seconds"
               >
-                <SkipForward className="w-5 h-5 text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+                <SkipForward className="w-4 h-4 sm:w-5 sm:h-5 text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
               </button>
 
               {/* Time display */}
-              <div className="flex items-center justify-center min-w-[60px] h-11 px-4 rounded-full bg-[hsl(var(--reader-text))]/5 border border-[hsl(var(--reader-text))]/8">
-                <span className="text-sm font-semibold text-[hsl(var(--reader-text))]/70 tabular-nums">
+              <div className="flex items-center justify-center min-w-[50px] sm:min-w-[60px] h-9 sm:h-11 px-2.5 sm:px-4 rounded-full bg-[hsl(var(--reader-text))]/5 border border-[hsl(var(--reader-text))]/8">
+                <span className="text-xs sm:text-sm font-semibold text-[hsl(var(--reader-text))]/70 tabular-nums">
                   {formatTime(state.currentTime)}
                 </span>
               </div>
             </div>
 
             {/* Right: Speed + Mode toggle + Menu */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3">
               <Menu.Root>
                 <Menu.Trigger
                   render={
-                    <button className="group flex items-center justify-center w-10 h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95 flex-shrink-0" />
+                    <button className="group flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95 flex-shrink-0" />
                   }
                 >
-                  <Gauge className="w-[18px] h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+                  <Gauge className="w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
                 </Menu.Trigger>
                 <Menu.Portal>
                   <Menu.Positioner sideOffset={12} style={{ zIndex: 9999 }}>
-                    <Menu.Popup className="rounded-xl bg-[hsl(var(--reader-bg))] border border-[hsl(var(--reader-text))]/10 shadow-2xl p-2 min-w-[120px]" style={{ zIndex: 9999 }}>
-                      <div className="text-xs text-[hsl(var(--reader-text))]/50 font-semibold mb-2 px-3 tracking-wide">SPEED</div>
+                    <Menu.Popup
+                      className="rounded-xl bg-[hsl(var(--reader-bg))] border border-[hsl(var(--reader-text))]/10 shadow-2xl p-2 min-w-[120px]"
+                      style={{ zIndex: 9999 }}
+                    >
+                      <div className="text-xs text-[hsl(var(--reader-text))]/50 font-semibold mb-2 px-3 tracking-wide">
+                        SPEED
+                      </div>
                       {speedPresets.map((speed) => (
                         <Menu.Item
                           key={speed}
@@ -315,7 +316,9 @@ export function AudioPlayer({
                           className="flex items-center justify-between px-3 py-2.5 text-sm text-[hsl(var(--reader-text))] hover:bg-[hsl(var(--reader-text))]/5 rounded-lg cursor-pointer transition-colors duration-200"
                         >
                           <span className="font-medium">{speed}x</span>
-                          {state.speed === speed && <Check className="w-4 h-4 text-[hsl(var(--reader-accent))]" />}
+                          {state.speed === speed && (
+                            <Check className="w-4 h-4 text-[hsl(var(--reader-accent))]" />
+                          )}
                         </Menu.Item>
                       ))}
                     </Menu.Popup>
@@ -327,10 +330,10 @@ export function AudioPlayer({
 
               <button
                 onClick={onToggleNav}
-                className="group flex items-center justify-center w-10 h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95 flex-shrink-0"
+                className="group flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95 flex-shrink-0"
                 aria-label="Open menu"
               >
-                <MenuIcon className="w-[18px] h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+                <MenuIcon className="w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
               </button>
             </div>
           </div>

@@ -2,6 +2,10 @@
 
 **Self-hosted ebook reader with AI-narrated audiobooks** — switch seamlessly between reading and listening with word-level progress sync.
 
+![Library view](readme-library.png)
+
+![Mobile reading experience](readme-mobile.png)
+
 ## Install
 
 ```bash
@@ -35,7 +39,7 @@ Open **http://localhost** and create your account.
 - **Storage:** 15GB minimum (30GB+ recommended)
 - **GPU:** Optional NVIDIA GPU for 5-10x faster audiobook generation
 
-*Note: TTS generation is CPU/GPU intensive. Without GPU: ~10-15s per chapter. With GPU: ~1-2s per chapter. Audio is cached permanently.*
+_Note: TTS generation is CPU/GPU intensive. Without GPU: ~10-15s per chapter. With GPU: ~1-2s per chapter. Audio is cached permanently._
 
 ## Configuration
 
@@ -96,12 +100,13 @@ Mount external book folders to auto-import EPUBs. Add to `docker-compose.yml` un
 server:
   volumes:
     - chapter_data:/app/data
-    - /path/to/your/books:/library/books:ro  # Read-only mount
+    - /path/to/your/books:/library/books:ro # Read-only mount
 ```
 
 Then in Settings → Library, add `/library/books` as a watched folder. Chapter will scan and import books automatically.
 
 **Notes:**
+
 - Use container paths (e.g., `/library/books`), not host paths
 - Mount as read-only (`:ro`) for safety
 - Books are copied to internal storage (supports deduplication across folders)

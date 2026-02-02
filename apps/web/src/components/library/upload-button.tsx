@@ -33,7 +33,9 @@ export function UploadButton({ variant = 'default', size = 'sm' }: UploadButtonP
     }
 
     if (invalidFiles.length > 0) {
-      alert(`The following files are not EPUB files and will be skipped:\n${invalidFiles.join('\n')}`);
+      alert(
+        `The following files are not EPUB files and will be skipped:\n${invalidFiles.join('\n')}`
+      );
     }
 
     if (files.length === 0) return;
@@ -69,14 +71,11 @@ export function UploadButton({ variant = 'default', size = 'sm' }: UploadButtonP
         disabled={isUploading}
         size={size}
         className={cn(
-          isShelf && 'h-10 bg-amber-900/80 hover:bg-amber-800 text-amber-100 border border-amber-700/50 shadow-lg'
+          isShelf &&
+            'h-10 px-4 bg-white/5 hover:bg-white/10 text-white/90 border-0 rounded-full transition-all duration-300'
         )}
       >
-        {isShelf ? (
-          <Plus className="w-4 h-4 mr-2" />
-        ) : (
-          <Upload className="w-4 h-4 mr-2" />
-        )}
+        {isShelf ? <Plus className="w-4 h-4 mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
         {size === 'lg' ? 'Add Books' : 'Add'}
       </Button>
     </div>

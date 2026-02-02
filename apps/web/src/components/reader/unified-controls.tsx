@@ -108,19 +108,19 @@ export function UnifiedControls({
           />
         </div>
 
-        <div className="max-w-5xl mx-auto px-6 py-5">
-          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-8">
+        <div className="max-w-5xl mx-auto px-3 sm:px-6 py-3 sm:py-5">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-8">
             {/* Left: Back button + Book info */}
-            <div className="flex items-center gap-4 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <button
                 onClick={onBack}
-                className="group flex items-center justify-center w-10 h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
+                className="group flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95 shrink-0"
                 aria-label="Back to library"
               >
-                <ArrowLeft className="w-[18px] h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+                <ArrowLeft className="w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
               </button>
 
-              <div className="flex flex-col min-w-0 gap-1">
+              <div className="hidden sm:flex flex-col min-w-0 gap-1">
                 <h1 className="text-base font-semibold truncate text-[hsl(var(--reader-text))] tracking-tight leading-none">
                   {book?.title}
                 </h1>
@@ -131,19 +131,19 @@ export function UnifiedControls({
             </div>
 
             {/* Center: Chapter navigation */}
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-2 sm:gap-3">
               <button
                 onClick={onPrevChapter}
                 disabled={!hasPrev}
-                className="group flex items-center justify-center w-11 h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95"
+                className="group flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95"
                 aria-label="Previous chapter"
               >
                 <ChevronLeft className="w-5 h-5 text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
               </button>
 
               {/* Progress indicator */}
-              <div className="flex items-center justify-center min-w-[60px] h-11 px-4 rounded-full bg-[hsl(var(--reader-text))]/5 border border-[hsl(var(--reader-text))]/8">
-                <span className="text-sm font-semibold text-[hsl(var(--reader-text))]/70 tabular-nums">
+              <div className="flex items-center justify-center min-w-[50px] sm:min-w-[60px] h-10 sm:h-11 px-3 sm:px-4 rounded-full bg-[hsl(var(--reader-text))]/5 border border-[hsl(var(--reader-text))]/8">
+                <span className="text-xs sm:text-sm font-semibold text-[hsl(var(--reader-text))]/70 tabular-nums">
                   {Math.round(bookProgress)}%
                 </span>
               </div>
@@ -151,7 +151,7 @@ export function UnifiedControls({
               <button
                 onClick={onNextChapter}
                 disabled={!hasNext}
-                className="group flex items-center justify-center w-11 h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95"
+                className="group flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95"
                 aria-label="Next chapter"
               >
                 <ChevronRight className="w-5 h-5 text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
@@ -159,17 +159,17 @@ export function UnifiedControls({
             </div>
 
             {/* Right: Mode toggle + Menu */}
-            <div className="flex items-center gap-3">
-              <div className="scale-110 origin-right">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="sm:scale-110 origin-right">
                 <ModeToggle mode={mode} onModeChange={onModeChange} />
               </div>
 
               <button
                 onClick={onToggleNav}
-                className="group flex items-center justify-center w-10 h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
+                className="group flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95 shrink-0"
                 aria-label="Open menu"
               >
-                <Menu className="w-[18px] h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+                <Menu className="w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
               </button>
             </div>
           </div>
