@@ -1,0 +1,31 @@
+# Chapter Caddyfile
+#
+# For local development (HTTP only):
+#   - Keep as `:80` below
+#
+# For production with HTTPS:
+#   - Replace `:80` with your domain: `yourdomain.com`
+#   - Caddy will automatically provision SSL certificates
+#   - Ensure ports 80 and 443 are accessible from the internet
+#
+# Example for production:
+#   yourdomain.com {
+#       handle /api/* {
+#           reverse_proxy server:3001
+#       }
+#       handle {
+#           reverse_proxy web:3000
+#       }
+#   }
+
+:80 {
+    # API routes - proxy to Fastify server
+    handle /api/* {
+        reverse_proxy server:3001
+    }
+
+    # All other routes - proxy to Next.js frontend
+    handle {
+        reverse_proxy web:3000
+    }
+}

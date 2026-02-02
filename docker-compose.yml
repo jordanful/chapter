@@ -1,0 +1,110 @@
+# Chapter - Self-hosted ebook reader with AI audiobooks
+#
+# Quick start:
+#   curl -O https://raw.githubusercontent.com/jordanful/chapter/main/docker-compose.yml
+#   docker compose up -d
+#
+# Then open http://localhost in your browser.
+#
+# Configuration (optional):
+#   Create a .env file to customize:
+#     JWT_SECRET=your-secure-secret
+#
+# GPU acceleration (optional):
+#   Uncomment the deploy section under 'kokoro' service
+
+services:
+  kokoro:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-jordanful}/chapter-kokoro:latest
+    volumes:
+      - kokoro_cache:/root/.cache/kokoro
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    # Uncomment for GPU acceleration:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  server:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-jordanful}/chapter-server:latest
+    depends_on:
+      redis:
+        condition: service_healthy
+      kokoro:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/app/data/chapter.db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-openssl-rand-base64-48}
+      BOOK_STORAGE_PATH: /app/data/books
+      AUDIO_CACHE_PATH: /app/data/audio
+      AUDIO_CACHE_MAX_SIZE: ${AUDIO_CACHE_MAX_SIZE:-10737418240}
+      KOKORO_SERVICE_URL: http://kokoro:5000
+      TTS_DEFAULT_VOICE: af_bella
+    volumes:
+      - chapter_data:/app/data
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-jordanful}/chapter-web:latest
+    depends_on:
+      - server
+    environment:
+      NEXT_PUBLIC_API_URL: /api
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    depends_on:
+      - web
+      - server
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    configs:
+      - source: caddyfile
+        target: /etc/caddy/Caddyfile
+    restart: unless-stopped
+
+configs:
+  caddyfile:
+    content: |
+      :80 {
+        handle /api/* {
+          reverse_proxy server:3001
+        }
+        handle {
+          reverse_proxy web:3000
+        }
+      }
+
+volumes:
+  chapter_data:
+  redis_data:
+  kokoro_cache:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,232 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // TTS Configuration (Kokoro - no API key needed!)
+  ttsVoiceId     String? // Kokoro voice ID
+  ttsSettings    Json? // Speed, temperature, etc.
+
+  // Reading preferences
+  readingSettings Json? // Font, theme, line height, etc.
+
+  // Relations
+  userBooks        UserBook[]
+  readingProgress  ReadingProgress[]
+
+  @@index([email])
+}
+
+model Book {
+  id          String   @id @default(cuid())
+  title       String
+  author      String?
+  isbn        String?
+  language    String?
+  publisher   String?
+  description String?
+  coverPath   String? // Path to cover image
+
+  // File information
+  filePath    String   @unique
+  fileSize    Int
+  fileHash    String   @unique // SHA256 for deduplication
+
+  // EPUB metadata
+  epubMetadata Json? // Raw EPUB metadata
+
+  // Statistics (precomputed)
+  totalWords      Int     @default(0)
+  totalCharacters Int     @default(0)
+  totalChapters   Int     @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  chapters        Chapter[]
+  userBooks       UserBook[]
+  readingProgress ReadingProgress[]
+  ttsCache        TTSCache[]
+
+  @@index([fileHash])
+  @@index([title])
+  @@index([author])
+}
+
+model Chapter {
+  id       String @id @default(cuid())
+  bookId   String
+  book     Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  index    Int // Chapter index (0-based)
+  title    String?
+  href     String // Original EPUB href
+
+  // Content
+  htmlContent  String // Original HTML
+  textContent  String // Plain text version
+
+  // Position tracking
+  startPosition Int // Global character offset (start)
+  endPosition   Int // Global character offset (end)
+  wordCount     Int @default(0)
+  charCount     Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  paragraphs Paragraph[]
+  ttsCache   TTSCache[]
+
+  @@unique([bookId, index])
+  @@index([bookId, index])
+}
+
+model Paragraph {
+  id        String @id @default(cuid())
+  chapterId String
+  chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  index     Int // Paragraph index within chapter (0-based)
+
+  // Content
+  text      String // Plain text
+
+  // Tokenization (stored as JSON for flexibility)
+  tokens    Json // Array of {text, start, end, type}
+
+  // Position tracking
+  startPosition Int // Global character offset
+  endPosition   Int // Global character offset
+  wordCount     Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chapterId, index])
+  @@index([chapterId, index])
+}
+
+model ReadingProgress {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookId    String
+  book      Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  // Multi-level position
+  chapterIndex    Int @default(0)
+  chapterId       String? // Current chapter ID
+  paragraphIndex  Int @default(0)
+  tokenIndex      Int @default(0)
+  charPosition    Int @default(0) // Global character offset
+
+  // Percentage (0-100, precomputed for quick display)
+  percentage      Float @default(0)
+
+  // Mode context
+  mode            String @default("reading") // "reading" or "audiobook"
+  scrollPosition  Float @default(0) // Scroll position for reading mode
+
+  // Audio position (if in audiobook mode)
+  audioTimestamp  Float? // Current playback position in seconds
+  audioChunkId    String? // Current TTS chunk ID
+
+  // Last read tracking
+  lastReadAt      DateTime @default(now())
+
+  // Session tracking
+  totalReadingTime   Int @default(0) // Total seconds spent reading
+  lastSessionTime    Int @default(0) // Seconds in last session
+  lastSessionDate    DateTime @default(now())
+
+  // Completion
+  isCompleted     Boolean @default(false)
+  completedAt     DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, bookId])
+  @@index([userId, bookId])
+  @@index([userId])
+}
+
+model TTSCache {
+  id        String @id @default(cuid())
+
+  // Chunk identification
+  contentHash   String @unique // Hash of text + provider + voice + settings
+  bookId        String
+  book          Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapterId     String?
+  chapter       Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  // Content range
+  startPosition Int // Global character offset (start)
+  endPosition   Int // Global character offset (end)
+  textContent   String // Original text for this chunk
+
+  // Kokoro TTS info
+  voiceId       String // Kokoro voice ID
+  settings      Json? // Speed, temperature, etc.
+
+  // Audio file
+  audioPath     String // Path to audio file
+  audioFormat   String @default("wav") // Kokoro outputs WAV
+  audioSize     Int // File size in bytes
+  audioDuration Float // Duration in seconds
+
+  // Word alignment data (if available from provider)
+  wordTimestamps Json? // Array of {word, start, end}
+
+  // LRU cache management
+  accessCount   Int @default(0)
+  lastAccessed  DateTime @default(now())
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([contentHash])
+  @@index([bookId])
+  @@index([lastAccessed]) // For LRU eviction
+}
+
+model UserBook {
+  id        String @id @default(cuid())
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookId    String
+  book      Book   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  // User-specific data
+  isFavorite  Boolean @default(false)
+  isArchived  Boolean @default(false)
+  rating      Int? // 1-5 stars
+  tags        Json    @default("[]") // Array of strings stored as JSON
+  notes       String?
+
+  addedAt     DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, bookId])
+  @@index([userId])
+  @@index([bookId])
+}

@@ -1,0 +1,122 @@
+# Development docker-compose - builds from source
+# For production, use the root docker-compose.yml which uses pre-built images
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: chapter-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chapter_network
+
+  kokoro:
+    build:
+      context: ../services/kokoro
+      dockerfile: Dockerfile
+    container_name: chapter-kokoro
+    environment:
+      PORT: 5000
+    volumes:
+      - kokoro_cache:/root/.cache/kokoro
+    ports:
+      - '5001:5000'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:5000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - chapter_network
+    # Uncomment for GPU support:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  server:
+    build:
+      context: ..
+      dockerfile: apps/server/Dockerfile
+    container_name: chapter-server
+    depends_on:
+      redis:
+        condition: service_healthy
+      kokoro:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/app/data/chapter.db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      PORT: 3001
+      BOOK_STORAGE_PATH: /app/data/books
+      AUDIO_CACHE_PATH: /app/data/audio
+      AUDIO_CACHE_MAX_SIZE: ${AUDIO_CACHE_MAX_SIZE:-10737418240}
+      KOKORO_SERVICE_URL: http://kokoro:5000
+      TTS_DEFAULT_VOICE: af_bella
+    volumes:
+      - chapter_data:/app/data
+    ports:
+      - '3001:3001'
+    networks:
+      - chapter_network
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://server:3001/api
+    container_name: chapter-web
+    depends_on:
+      - server
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost/api
+    ports:
+      - '3000:3000'
+    networks:
+      - chapter_network
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: chapter-caddy
+    depends_on:
+      - web
+      - server
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - chapter_network
+    restart: unless-stopped
+
+volumes:
+  chapter_data:
+  redis_data:
+  kokoro_cache:
+  caddy_data:
+  caddy_config:
+
+networks:
+  chapter_network:
+    driver: bridge

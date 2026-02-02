@@ -1,0 +1,380 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Classic warm reading palette - cream paper with rich text */
+    --background: 35 30% 96%;
+    --foreground: 30 10% 15%;
+    --card: 35 30% 96%;
+    --card-foreground: 30 10% 15%;
+    --popover: 35 30% 96%;
+    --popover-foreground: 30 10% 15%;
+    --primary: 30 10% 15%;
+    --primary-foreground: 35 30% 96%;
+    --secondary: 35 20% 90%;
+    --secondary-foreground: 30 10% 15%;
+    --muted: 35 20% 90%;
+    --muted-foreground: 30 8% 40%;
+    --accent: 35 25% 88%;
+    --accent-foreground: 30 10% 15%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 35 30% 96%;
+    --border: 35 15% 85%;
+    --input: 35 15% 85%;
+    --ring: 30 10% 15%;
+    --radius: 0.25rem;
+
+    /* Reading-specific */
+    --reader-bg: 35 30% 96%;
+    --reader-text: 30 10% 15%;
+    --reader-accent: 30 50% 45%;
+  }
+
+  .dark {
+    /* Sophisticated dark mode - warm blacks with soft contrast */
+    --background: 30 10% 8%;
+    --foreground: 35 25% 92%;
+    --card: 30 10% 8%;
+    --card-foreground: 35 25% 92%;
+    --popover: 30 10% 8%;
+    --popover-foreground: 35 25% 92%;
+    --primary: 35 25% 92%;
+    --primary-foreground: 30 10% 8%;
+    --secondary: 30 8% 15%;
+    --secondary-foreground: 35 25% 92%;
+    --muted: 30 8% 15%;
+    --muted-foreground: 35 15% 60%;
+    --accent: 30 8% 18%;
+    --accent-foreground: 35 25% 92%;
+    --destructive: 0 60% 45%;
+    --destructive-foreground: 35 25% 92%;
+    --border: 30 8% 20%;
+    --input: 30 8% 20%;
+    --ring: 35 25% 92%;
+
+    /* Reading-specific */
+    --reader-bg: 30 10% 8%;
+    --reader-text: 35 25% 92%;
+    --reader-accent: 35 50% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  }
+
+  /* Reading typography - optimized for long-form reading */
+  .reader-content {
+    font-family: var(--font-serif);
+    font-size: 1.125rem; /* 18px */
+    line-height: 1.75; /* 28px - optimal for reading */
+    letter-spacing: 0.01em;
+    color: hsl(var(--reader-text));
+  }
+
+  @media (min-width: 640px) {
+    .reader-content {
+      font-size: 1.1875rem; /* 19px */
+      line-height: 1.8; /* 34.2px */
+    }
+  }
+
+  @media (min-width: 768px) {
+    .reader-content {
+      font-size: 1.25rem; /* 20px */
+      line-height: 1.85; /* 37px */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .reader-content {
+      font-size: 1.3125rem; /* 21px */
+      line-height: 1.9; /* 39.9px */
+    }
+  }
+
+  /* Smooth scrolling with easing */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  /* Touch-friendly tap targets */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent text size adjustment on mobile */
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Selection styling */
+  ::selection {
+    background: hsl(var(--reader-accent) / 0.2);
+    color: hsl(var(--reader-text));
+  }
+
+  ::-moz-selection {
+    background: hsl(var(--reader-accent) / 0.2);
+    color: hsl(var(--reader-text));
+  }
+}
+
+/* Custom scrollbar for webkit */
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.3);
+  }
+
+  /* Page fade-in animation */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInStagger {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInFromBottom {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInFromTop {
+    from {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-fade-in-stagger {
+    animation: fadeInStagger 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+  }
+
+  .animate-slide-in-bottom {
+    animation: slideInFromBottom 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .animate-slide-in-top {
+    animation: slideInFromTop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* Drop cap styling */
+  .drop-cap::first-letter {
+    float: left;
+    font-size: 3.5em;
+    line-height: 0.85;
+    margin: 0.1em 0.15em 0 0;
+    font-weight: 600;
+    color: hsl(var(--reader-accent));
+  }
+
+  /* Hyphenation */
+  .hyphenate {
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+    hyphenate-limit-chars: 6 3 3;
+  }
+}
+
+/* Skeuomorphic Bookshelf Styles */
+.bookshelf-container {
+  min-height: 100vh;
+  padding-top: 1rem;
+}
+
+.shelf {
+  position: relative;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.shelf-books {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1.5rem;
+  align-items: end;
+  padding: 1.5rem 1rem 0 1rem;
+  min-height: 220px;
+}
+
+.shelf-book {
+  width: 100%;
+  max-width: 180px;
+  justify-self: center;
+}
+
+/* Shelf board - the wooden plank (darker) */
+.shelf-board {
+  position: relative;
+  height: 22px;
+  background: linear-gradient(
+    to bottom,
+    #5C4332 0%,
+    #4A3728 40%,
+    #3D2E22 100%
+  );
+  border-radius: 0 0 4px 4px;
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.5),
+    0 8px 20px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Shelf edge - the front lip of the shelf (darker) */
+.shelf-edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: linear-gradient(
+    to bottom,
+    #6B5344 0%,
+    #5C4332 50%,
+    #4A3728 100%
+  );
+  border-radius: 2px 2px 0 0;
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.1),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Book cover styling */
+.book-cover {
+  border-radius: 2px 4px 4px 2px;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.15),
+    2px 0 4px rgba(0, 0, 0, 0.1),
+    -1px 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Book styling on shelf */
+.shelf-book .group {
+  transform-origin: bottom center;
+  transition: transform 0.25s ease-out, filter 0.25s ease-out;
+  transform-style: preserve-3d;
+}
+
+.shelf-book .group:hover {
+  transform: perspective(800px) rotateX(-12deg) translateY(-4px);
+}
+
+.shelf-book .book-cover {
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.4),
+    0 8px 16px rgba(0, 0, 0, 0.2),
+    3px 0 6px rgba(0, 0, 0, 0.15),
+    -2px 0 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.25s ease-out;
+}
+
+.shelf-book .group:hover .book-cover {
+  box-shadow:
+    0 8px 16px rgba(0, 0, 0, 0.5),
+    0 16px 32px rgba(0, 0, 0, 0.3),
+    3px 0 8px rgba(0, 0, 0, 0.2),
+    -2px 0 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive shelf adjustments */
+@media (max-width: 1280px) {
+  .shelf-books {
+    grid-template-columns: repeat(5, 1fr);
+    min-height: 200px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .shelf-books {
+    grid-template-columns: repeat(4, 1fr);
+    min-height: 180px;
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .shelf {
+    padding: 0 1rem;
+  }
+  .shelf-books {
+    grid-template-columns: repeat(3, 1fr);
+    padding: 1rem 0.5rem 0 0.5rem;
+    gap: 1rem;
+    min-height: 160px;
+  }
+}
+
+@media (max-width: 480px) {
+  .shelf-books {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    min-height: 140px;
+  }
+  .shelf-book {
+    max-width: 150px;
+  }
+}

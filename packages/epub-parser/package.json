@@ -1,0 +1,22 @@
+{
+  "name": "@chapter/epub-parser",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@chapter/types": "workspace:*",
+    "jszip": "^3.10.1",
+    "xml2js": "^0.6.2",
+    "cheerio": "^1.0.0-rc.12",
+    "he": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/xml2js": "^0.4.14",
+    "@types/he": "^1.2.3",
+    "typescript": "^5.3.3"
+  }
+}
