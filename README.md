@@ -5,13 +5,13 @@
 ## Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/jordanful/chapter/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/jordanful/chapter/master/install.sh | bash
 ```
 
 Or manually:
 
 ```bash
-curl -O https://raw.githubusercontent.com/jordanful/chapter/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/jordanful/chapter/master/docker-compose.yml
 docker compose up -d
 ```
 
@@ -29,9 +29,13 @@ Open **http://localhost** and create your account.
 
 ## Requirements
 
-- Docker
-- 2GB RAM (4GB recommended)
-- 10GB disk space
+- **Docker** - Required
+- **CPU:** 2+ cores (4+ recommended for better TTS performance)
+- **RAM:** 2GB minimum (4GB recommended)
+- **Storage:** 15GB minimum (30GB+ recommended)
+- **GPU:** Optional NVIDIA GPU for 5-10x faster audiobook generation
+
+*Note: TTS generation is CPU/GPU intensive. Without GPU: ~10-15s per chapter. With GPU: ~1-2s per chapter. Audio is cached permanently.*
 
 ## Configuration
 

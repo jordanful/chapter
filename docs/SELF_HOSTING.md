@@ -19,41 +19,91 @@ This guide covers everything you need to deploy Chapter on your own server.
 
 ## System Requirements
 
-### Minimum Requirements
+### Overview
 
-| Resource | Minimum | Recommended |
-|----------|---------|-------------|
-| CPU | 2 cores | 4+ cores |
-| RAM | 2 GB | 4+ GB |
-| Storage | 10 GB | 50+ GB |
-| OS | Linux (x86_64) | Ubuntu 22.04+ |
+Chapter's resource usage is primarily driven by **TTS audio generation**. Reading books uses minimal resources, but generating audiobook narration requires CPU/GPU power. Requirements scale with usage:
+
+- **Single user, occasional audiobook use:** Minimum specs work fine
+- **Multiple users, frequent audiobook generation:** Recommended specs
+- **Heavy audiobook usage or large household:** GPU acceleration highly recommended
+
+### Hardware Requirements
+
+| Resource | Minimum | Recommended | Optimal (GPU) |
+|----------|---------|-------------|---------------|
+| **CPU** | 2 cores | 4 cores | 4+ cores |
+| **RAM** | 2 GB | 4 GB | 4-8 GB |
+| **Storage** | 15 GB | 30 GB | 50+ GB |
+| **GPU** | None | None | NVIDIA CUDA |
+| **OS** | Linux x86_64 | Ubuntu 22.04+ | Ubuntu 22.04+ |
+
+### Performance Expectations
+
+**TTS Generation Speed (per chapter, ~5000 words):**
+
+| Configuration | Generation Time | Use Case |
+|---------------|-----------------|----------|
+| 2-core CPU | 15-25 seconds | Light use, patient users |
+| 4-core CPU | 8-12 seconds | Regular use, small household |
+| GPU (any NVIDIA) | 1-3 seconds | Heavy use, multiple users |
+
+**Notes:**
+- Generated audio is cached permanently, so each chapter only needs to be generated once
+- Multiple users can share the same audio cache (saves time and storage)
+- Reading books (no audiobook) uses negligible resources
 
 ### Storage Breakdown
 
-- **Docker images:** ~2 GB
-- **Kokoro TTS model:** ~500 MB (downloaded on first run)
-- **Audio cache:** 10 GB default (configurable)
-- **Book storage:** Depends on library size (~1-5 MB per book)
-- **Database:** ~100 MB base + growth
+| Component | Size | Notes |
+|-----------|------|-------|
+| Docker images | ~2.5 GB | One-time download |
+| Kokoro TTS model | ~500 MB | Downloaded on first run |
+| Audio cache (default) | 10 GB | Configurable via `AUDIO_CACHE_MAX_SIZE` |
+| Seed books | ~2.5 MB | 4 public domain classics included |
+| Book storage | ~1-5 MB/book | Depends on library size |
+| Database | ~100 MB | Grows with usage, progress, metadata |
+
+**Total minimum:** ~15 GB (with default cache)
+**Recommended:** 30+ GB (comfortable headroom for larger library)
 
 ### Network Requirements
 
-- Port 80 (HTTP) and/or 443 (HTTPS)
-- Outbound internet access during first startup (to pull images and download TTS model)
+- **Ports:** 80 (HTTP) and/or 443 (HTTPS)
+- **Initial setup:** Outbound internet to pull Docker images and download TTS model (~3 GB total)
+- **Runtime:** No internet required (fully self-hosted)
+- **Bandwidth:** Minimal (<1 Mbps per user for audio streaming)
+
+### Scaling Considerations
+
+**Single user:**
+- Minimum specs are fine
+- TTS generation happens on-demand
+- ~15-30 seconds wait time per new chapter (CPU-only)
+
+**2-5 users (household):**
+- Recommended specs
+- Shared audio cache reduces redundant generation
+- Consider GPU if users frequently listen to different books simultaneously
+
+**5+ users or public instance:**
+- GPU acceleration strongly recommended
+- Increase RAM to 8GB+
+- Larger audio cache (20-50GB)
+- Monitor TTS queue and cache hit rates
 
 ---
 
 ## Quick Start
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/jordanful/chapter/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/jordanful/chapter/master/install.sh | bash
 ```
 
 Or manually:
 
 ```bash
 mkdir -p ~/chapter && cd ~/chapter
-curl -O https://raw.githubusercontent.com/jordanful/chapter/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/jordanful/chapter/master/docker-compose.yml
 docker compose up -d
 ```
 
@@ -83,7 +133,7 @@ sudo apt install docker-compose-plugin
 
 ```bash
 mkdir -p ~/chapter && cd ~/chapter
-curl -O https://raw.githubusercontent.com/jordanful/chapter/main/docker-compose.yml
+curl -O https://raw.githubusercontent.com/jordanful/chapter/master/docker-compose.yml
 ```
 
 ### Step 3: Configure

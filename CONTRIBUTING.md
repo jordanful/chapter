@@ -79,7 +79,7 @@ pnpm format
 
 ### Branching
 
-- `main` - production-ready code
+- `master` - production-ready code
 - `develop` - development branch
 - `feature/*` - new features
 - `fix/*` - bug fixes
@@ -308,7 +308,7 @@ export function BookCard({ book, onSelect }: BookCardProps) {
 3. Update version in `package.json`
 4. Update CHANGELOG.md
 5. Create release branch
-6. Merge to `main`
+6. Merge to `master`
 7. Tag release
 8. Deploy
 

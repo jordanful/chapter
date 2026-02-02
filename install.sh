@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Chapter installer
-# Usage: curl -sSL https://raw.githubusercontent.com/jordanful/chapter/main/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/jordanful/chapter/master/install.sh | bash
 #
 
 set -e
@@ -21,7 +21,7 @@ cd ~/chapter
 
 # Download docker-compose.yml
 echo "Downloading configuration..."
-curl -sSL https://raw.githubusercontent.com/jordanful/chapter/main/docker-compose.yml -o docker-compose.yml
+curl -sSL https://raw.githubusercontent.com/jordanful/chapter/master/docker-compose.yml -o docker-compose.yml
 
 # Generate secrets if .env doesn't exist
 if [ ! -f .env ]; then
