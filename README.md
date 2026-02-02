@@ -4,7 +4,7 @@
 
 ![Library view](readme-library.png)
 
-![Mobile reading experience](readme-mobile.png)
+<img src="readme-mobile.png" alt="Mobile reading experience" width="375" />
 
 ## Install
 
