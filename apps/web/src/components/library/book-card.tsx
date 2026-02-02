@@ -8,28 +8,30 @@ import { apiClient } from '@/lib/api-client';
 import { offlineStorage } from '@/lib/offline-storage';
 import { Download, Check, Loader2, MoreHorizontal, ImageIcon, BookOpen, Edit } from 'lucide-react';
 
+// Tailwind safelist: These classes must be statically present for JIT to include them
+// prettier-ignore
+const BOOK_COLORS = [
+  'from-rose-800 to-rose-950',     // bg-gradient-to-br from-rose-800 to-rose-950
+  'from-amber-800 to-amber-950',   // bg-gradient-to-br from-amber-800 to-amber-950
+  'from-emerald-800 to-emerald-950', // bg-gradient-to-br from-emerald-800 to-emerald-950
+  'from-blue-800 to-blue-950',     // bg-gradient-to-br from-blue-800 to-blue-950
+  'from-violet-800 to-violet-950', // bg-gradient-to-br from-violet-800 to-violet-950
+  'from-slate-700 to-slate-900',   // bg-gradient-to-br from-slate-700 to-slate-900
+  'from-orange-800 to-orange-950', // bg-gradient-to-br from-orange-800 to-orange-950
+  'from-teal-800 to-teal-950',     // bg-gradient-to-br from-teal-800 to-teal-950
+  'from-indigo-800 to-indigo-950', // bg-gradient-to-br from-indigo-800 to-indigo-950
+  'from-stone-700 to-stone-900',   // bg-gradient-to-br from-stone-700 to-stone-900
+] as const;
+
 // Generate a consistent color based on the book title
 function getBookColor(title: string): string {
-  const colors = [
-    'from-rose-800 to-rose-950',
-    'from-amber-800 to-amber-950',
-    'from-emerald-800 to-emerald-950',
-    'from-blue-800 to-blue-950',
-    'from-violet-800 to-violet-950',
-    'from-slate-700 to-slate-900',
-    'from-orange-800 to-orange-950',
-    'from-teal-800 to-teal-950',
-    'from-indigo-800 to-indigo-950',
-    'from-stone-700 to-stone-900',
-  ];
-
   let hash = 0;
   for (let i = 0; i < title.length; i++) {
     hash = (hash << 5) - hash + title.charCodeAt(i);
     hash = hash & hash;
   }
 
-  return colors[Math.abs(hash) % colors.length];
+  return BOOK_COLORS[Math.abs(hash) % BOOK_COLORS.length];
 }
 import { useDownload } from '@/lib/hooks/use-download';
 import { CoverPickerDialog } from './cover-picker-dialog';
@@ -147,7 +149,12 @@ export function BookCard({ book }: BookCardProps) {
           <div className="absolute inset-y-1 right-0 w-1 bg-gradient-to-l from-stone-300 to-stone-100 z-10 pointer-events-none rounded-r-sm" />
 
           {coverUrl ? (
-            <img src={coverUrl} alt={book.title} className="w-full h-full object-cover" />
+            <img
+              src={coverUrl}
+              alt={book.title}
+              className="w-full h-full object-cover"
+              onError={() => setCoverUrl(null)}
+            />
           ) : (
             <div
               className={`w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br ${getBookColor(book.title)}`}

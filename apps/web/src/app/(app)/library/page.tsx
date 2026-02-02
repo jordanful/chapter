@@ -308,7 +308,7 @@ export default function LibraryPage() {
               </button>
             </div>
           </div>
-        ) : allItems.length === 0 ? (
+        ) : allItems.length === 0 && !booksLoading ? (
           <div className="relative">
             {/* Empty shelves */}
             <Bookshelf>{[]}</Bookshelf>
@@ -321,6 +321,8 @@ export default function LibraryPage() {
               </div>
             </div>
           </div>
+        ) : allItems.length === 0 && booksLoading ? (
+          <Bookshelf>{[]}</Bookshelf>
         ) : (
           <>
             {/* Search results indicator */}

@@ -7,6 +7,29 @@ const config: Config = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  safelist: [
+    // Book cover gradient colors (dynamically selected based on title hash)
+    'from-rose-800',
+    'to-rose-950',
+    'from-amber-800',
+    'to-amber-950',
+    'from-emerald-800',
+    'to-emerald-950',
+    'from-blue-800',
+    'to-blue-950',
+    'from-violet-800',
+    'to-violet-950',
+    'from-slate-700',
+    'to-slate-900',
+    'from-orange-800',
+    'to-orange-950',
+    'from-teal-800',
+    'to-teal-950',
+    'from-indigo-800',
+    'to-indigo-950',
+    'from-stone-700',
+    'to-stone-900',
+  ],
   theme: {
     extend: {
       fontFamily: {
