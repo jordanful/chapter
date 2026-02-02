@@ -77,10 +77,31 @@ export default function ReaderPage() {
   // Restore progress on mount
   useEffect(() => {
     if (progress && !isProgressRestored) {
+      console.log('[Progress Restore]', {
+        mode: progress.mode,
+        chapterIndex: progress.chapterIndex,
+        audioTimestamp: progress.audioTimestamp,
+        audioChunkId: progress.audioChunkId,
+        scrollPosition: progress.scrollPosition,
+      });
+
       setCurrentChapter(progress.chapterIndex);
       setCurrentScrollProgress(progress.scrollPosition || 0);
       const restoredMode = progress.mode === 'audio' ? 'listening' : 'reading';
       setMode(restoredMode);
+
+      // Restore audio position if in listening mode
+      if (restoredMode === 'listening' && progress.audioTimestamp !== undefined) {
+        console.log('[Audio Position Restore]', {
+          audioTimestamp: progress.audioTimestamp,
+          audioChunkId: progress.audioChunkId,
+        });
+        setCurrentAudioTime(progress.audioTimestamp);
+        if (progress.audioChunkId) {
+          setCurrentAudioChunk(progress.audioChunkId);
+        }
+      }
+
       setIsProgressRestored(true);
     }
   }, [progress, isProgressRestored]);
@@ -225,7 +246,7 @@ export default function ReaderPage() {
     : progress?.percentage || 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[hsl(var(--reader-bg))]">
       {showNav && structure && (
         <ChapterNav
           chapters={structure.chapters}
@@ -239,86 +260,118 @@ export default function ReaderPage() {
         />
       )}
 
-      {/* Reading View */}
-      {mode === 'reading' && (
-        <>
-          <div className="pb-24">
-            <ChapterReader
-              chapter={chapter}
-              isLoading={chapterLoading}
-              onScrollProgress={handleScrollProgress}
-            />
-          </div>
-          <UnifiedControls
-            book={book}
-            currentChapter={currentChapter}
-            totalChapters={structure?.chapters.length || 0}
-            bookProgress={estimatedProgress}
-            onBack={() => router.push('/library')}
-            onToggleNav={() => setShowNav(!showNav)}
-            onPrevChapter={goToPrevChapter}
-            onNextChapter={goToNextChapter}
-            hasPrev={currentChapter > 0}
-            hasNext={structure ? currentChapter < structure.chapters.length - 1 : false}
-            mode={mode}
-            onModeChange={handleModeChange}
+      {/* Always show reading content */}
+      <div className="pb-24">
+        {mode === 'listening' && audioChunks && audioChunks.length > 0 ? (
+          <ReadAlongView
+            chapter={chapter}
+            currentWordIndex={
+              currentAudioChunk && chapter
+                ? (() => {
+                    const result = getCurrentWord(
+                      chapter.paragraphs?.map((p: any) => p.text).join('\n\n') || '',
+                      currentAudioChunk,
+                      currentAudioTime,
+                      audioChunks.map((chunk: any) => ({
+                        id: chunk.id,
+                        startPosition: chunk.startPosition,
+                        endPosition: chunk.endPosition,
+                        audioDuration: chunk.audioDuration,
+                      }))
+                    );
+
+                    // Convert global character position to chapter-relative
+                    const chapterStartPosition = chapter.startPosition || 0;
+                    const chapterRelativeCharPosition = Math.max(0, result.charPosition - chapterStartPosition);
+
+                    // Calculate word index from chapter-relative position
+                    const chapterText = chapter.paragraphs?.map((p: any) => p.text).join('\n\n') || '';
+                    const words = chapterText.split(/(\s+)/);
+                    let currentPos = 0;
+                    let wordIndex = 0;
+                    for (let i = 0; i < words.length; i++) {
+                      const wordLength = words[i].length;
+                      if (currentPos + wordLength > chapterRelativeCharPosition) {
+                        wordIndex = i;
+                        break;
+                      }
+                      currentPos += wordLength;
+                    }
+
+                    console.log('[Word Tracking]', {
+                      chunkId: currentAudioChunk,
+                      currentTime: currentAudioTime,
+                      globalCharPos: result.charPosition,
+                      chapterStartPos: chapterStartPosition,
+                      chapterRelativePos: chapterRelativeCharPosition,
+                      wordIndex: wordIndex,
+                      totalChunks: audioChunks.length,
+                    });
+
+                    return wordIndex;
+                  })()
+                : 0
+            }
+            isLoading={chapterLoading}
           />
-        </>
-      )}
+        ) : (
+          <ChapterReader
+            chapter={chapter}
+            isLoading={chapterLoading}
+            onScrollProgress={handleScrollProgress}
+          />
+        )}
+      </div>
 
-      {/* Listening View */}
-      {mode === 'listening' && (
-        <div className="min-h-screen pb-48 bg-[hsl(var(--reader-bg))]">
-          {isGenerating ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <div className="w-12 h-12 border-4 border-[hsl(var(--reader-accent))]/20 border-t-[hsl(var(--reader-accent))] rounded-full animate-spin" />
-              <p className="text-sm text-muted-foreground font-medium">Generating audio...</p>
-              <p className="text-xs text-muted-foreground">This may take a moment</p>
+      {/* In-place loading overlay for audio generation */}
+      {isGenerating && (
+        <div className="fixed inset-0 z-40 pointer-events-none">
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-auto">
+            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-[hsl(var(--reader-bg))]/95 backdrop-blur-xl border border-[hsl(var(--reader-text))]/10 shadow-2xl">
+              <div className="w-5 h-5 border-3 border-[hsl(var(--reader-accent))]/20 border-t-[hsl(var(--reader-accent))] rounded-full animate-spin" />
+              <div className="flex flex-col">
+                <p className="text-sm font-semibold text-[hsl(var(--reader-text))]">Preparing audio...</p>
+                <p className="text-xs text-[hsl(var(--reader-text))]/50">This will only take a moment</p>
+              </div>
             </div>
-          ) : audioChunks && audioChunks.length > 0 ? (
-            <>
-              <ReadAlongView
-                chapter={chapter}
-                currentWordIndex={
-                  currentAudioChunk && chapter
-                    ? getCurrentWord(
-                        chapter.paragraphs?.map((p: any) => p.text).join('\n\n') || '',
-                        currentAudioChunk,
-                        currentAudioTime,
-                        audioChunks.map((chunk: any) => ({
-                          id: chunk.id,
-                          startPosition: chunk.startPosition,
-                          endPosition: chunk.endPosition,
-                          audioDuration: chunk.audioDuration,
-                        }))
-                      ).wordIndex
-                    : 0
-                }
-                isLoading={chapterLoading}
-              />
-
-              <AudioPlayer
-                bookId={bookId}
-                chapterId={chapterId || ''}
-                chapterTitle={currentChapterData?.title || `Chapter ${currentChapter + 1}`}
-                chunks={audioChunks}
-                onPositionChange={handlePositionChange}
-                book={book}
-                currentChapter={currentChapter}
-                totalChapters={structure?.chapters.length || 0}
-                onBack={() => router.push('/library')}
-                onToggleNav={() => setShowNav(!showNav)}
-                mode={mode}
-                onModeChange={handleModeChange}
-              />
-            </>
-          ) : (
-            <div className="flex items-center justify-center py-20">
-              <p className="text-muted-foreground">No audio available</p>
-            </div>
-          )}
+          </div>
         </div>
       )}
+
+      {/* Controls - switch between reading and audio player */}
+      {mode === 'reading' ? (
+        <UnifiedControls
+          book={book}
+          currentChapter={currentChapter}
+          totalChapters={structure?.chapters.length || 0}
+          bookProgress={estimatedProgress}
+          onBack={() => router.push('/library')}
+          onToggleNav={() => setShowNav(!showNav)}
+          onPrevChapter={goToPrevChapter}
+          onNextChapter={goToNextChapter}
+          hasPrev={currentChapter > 0}
+          hasNext={structure ? currentChapter < structure.chapters.length - 1 : false}
+          mode={mode}
+          onModeChange={handleModeChange}
+        />
+      ) : audioChunks && audioChunks.length > 0 ? (
+        <AudioPlayer
+          bookId={bookId}
+          chapterId={chapterId || ''}
+          chapterTitle={currentChapterData?.title || `Chapter ${currentChapter + 1}`}
+          chunks={audioChunks}
+          onPositionChange={handlePositionChange}
+          initialChunkId={currentAudioChunk || undefined}
+          initialTime={currentAudioTime || undefined}
+          book={book}
+          currentChapter={currentChapter}
+          totalChapters={structure?.chapters.length || 0}
+          onBack={() => router.push('/library')}
+          onToggleNav={() => setShowNav(!showNav)}
+          mode={mode}
+          onModeChange={handleModeChange}
+        />
+      ) : null}
     </div>
   );
 }

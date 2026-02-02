@@ -28,6 +28,8 @@ interface AudioPlayerProps {
   chapterTitle: string;
   chunks: AudioChunk[];
   onPositionChange?: (position: number, chunkId?: string) => void;
+  initialChunkId?: string;
+  initialTime?: number;
   className?: string;
   // Navigation
   book?: any;
@@ -45,6 +47,8 @@ export function AudioPlayer({
   chapterTitle,
   chunks,
   onPositionChange,
+  initialChunkId,
+  initialTime,
   className = '',
   book,
   currentChapter,
@@ -59,6 +63,8 @@ export function AudioPlayer({
     chapterId,
     chunks,
     onPositionChange,
+    initialChunkId,
+    initialTime,
   });
 
   const [isDragging, setIsDragging] = useState(false);
@@ -203,126 +209,135 @@ export function AudioPlayer({
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${
-        isVisible ? 'translate-y-0' : 'translate-y-full'
+      className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-500 ease-out ${
+        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
       } ${className}`}
     >
-      {/* Progress bar at top */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-foreground/5">
+      {/* Refined gradient backdrop */}
+      <div className="relative bg-gradient-to-b from-[hsl(var(--reader-bg))]/95 via-[hsl(var(--reader-bg))]/98 to-[hsl(var(--reader-bg))] backdrop-blur-2xl border-t border-[hsl(var(--reader-text))]/8">
+        {/* Elegant top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--reader-accent))]/30 to-transparent" />
+
+        {/* Refined progress bar */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-[hsl(var(--reader-text))]/4">
+          <div
+            className="h-full bg-gradient-to-r from-[hsl(var(--reader-accent))]/80 to-[hsl(var(--reader-accent))] shadow-[0_0_8px_rgba(var(--reader-accent-rgb),0.3)] transition-all duration-500 ease-out"
+            style={{ width: `${progressPercentage}%` }}
+          />
+        </div>
+
+        {/* Hidden seek bar */}
         <div
-          className="h-full bg-[hsl(var(--reader-accent))] transition-all"
-          style={{ width: `${progressPercentage}%` }}
+          ref={seekBarRef}
+          className="absolute top-0 left-0 right-0 h-6 cursor-pointer z-10"
+          onMouseDown={handleSeekMouseDown}
         />
-      </div>
 
-      {/* Hidden seek bar */}
-      <div
-        ref={seekBarRef}
-        className="absolute top-0 left-0 right-0 h-3 cursor-pointer opacity-0 hover:opacity-100 z-10"
-        onMouseDown={handleSeekMouseDown}
-      />
-
-      <div className="bg-[hsl(var(--reader-bg))]/98 backdrop-blur-lg border-t border-border/50 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
-        <div className="max-w-[42rem] mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
-          {/* Left: Back + Book info */}
-          {book && onBack && (
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <Button
-                variant="ghost"
-                size="icon"
+        <div className="max-w-5xl mx-auto px-6 py-5">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-8">
+            {/* Left: Back button + Book info */}
+            <div className="flex items-center gap-4 min-w-0">
+              <button
                 onClick={onBack}
-                className="hover:bg-accent/50 h-7 w-7 flex-shrink-0"
+                className="group flex items-center justify-center w-10 h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
+                aria-label="Back to library"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
-              </Button>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-[11px] font-serif font-medium truncate text-[hsl(var(--reader-text))] leading-tight">
-                  {book.title}
+                <ArrowLeft className="w-[18px] h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+              </button>
+
+              <div className="flex flex-col min-w-0 gap-1">
+                <h1 className="text-base font-semibold truncate text-[hsl(var(--reader-text))] tracking-tight leading-none">
+                  {book?.title}
                 </h1>
-                <p className="text-[9px] text-muted-foreground font-medium tracking-wide leading-tight truncate">
+                <p className="text-[13px] text-[hsl(var(--reader-text))]/50 font-medium tracking-wide leading-none">
                   {chapterTitle}
                 </p>
               </div>
             </div>
-          )}
 
-          {/* Center: Playback controls */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => controls.seek(Math.max(0, state.currentTime - 15))}
-              className="hover:bg-accent/50 h-7 w-7"
-            >
-              <SkipBack className="w-3 h-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={controls.togglePlay}
-              disabled={state.isLoading}
-              className="hover:bg-accent/50 h-8 w-8"
-            >
-              {state.isPlaying ? (
-                <Pause className="w-4 h-4 fill-current" />
-              ) : (
-                <Play className="w-4 h-4 fill-current" />
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => controls.seek(Math.min(state.duration, state.currentTime + 15))}
-              className="hover:bg-accent/50 h-7 w-7"
-            >
-              <SkipForward className="w-3 h-3" />
-            </Button>
-            <div className="text-[9px] text-muted-foreground font-medium ml-1 min-w-[32px]">
-              {formatTime(state.currentTime)}
+            {/* Center: Audio playback controls */}
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => controls.seek(Math.max(0, state.currentTime - 15))}
+                className="group flex items-center justify-center w-11 h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
+                aria-label="Skip back 15 seconds"
+              >
+                <SkipBack className="w-5 h-5 text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+              </button>
+
+              <button
+                onClick={controls.togglePlay}
+                disabled={state.isLoading}
+                className="group flex items-center justify-center w-14 h-14 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95"
+                aria-label={state.isPlaying ? 'Pause' : 'Play'}
+              >
+                {state.isPlaying ? (
+                  <Pause className="w-6 h-6 text-[hsl(var(--reader-text))]/70 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300 fill-current" />
+                ) : (
+                  <Play className="w-6 h-6 text-[hsl(var(--reader-text))]/70 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300 fill-current ml-0.5" />
+                )}
+              </button>
+
+              <button
+                onClick={() => controls.seek(Math.min(state.duration, state.currentTime + 15))}
+                className="group flex items-center justify-center w-11 h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
+                aria-label="Skip forward 15 seconds"
+              >
+                <SkipForward className="w-5 h-5 text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+              </button>
+
+              {/* Time display */}
+              <div className="flex items-center justify-center min-w-[60px] h-11 px-4 rounded-full bg-[hsl(var(--reader-text))]/5 border border-[hsl(var(--reader-text))]/8">
+                <span className="text-sm font-semibold text-[hsl(var(--reader-text))]/70 tabular-nums">
+                  {formatTime(state.currentTime)}
+                </span>
+              </div>
+            </div>
+
+            {/* Right: Speed + Mode toggle + Menu */}
+            <div className="flex items-center gap-3">
+              <Menu.Root>
+                <Menu.Trigger
+                  render={
+                    <button className="group flex items-center justify-center w-10 h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95 flex-shrink-0" />
+                  }
+                >
+                  <Gauge className="w-[18px] h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+                </Menu.Trigger>
+                <Menu.Portal>
+                  <Menu.Positioner sideOffset={12} style={{ zIndex: 9999 }}>
+                    <Menu.Popup className="rounded-xl bg-[hsl(var(--reader-bg))] border border-[hsl(var(--reader-text))]/10 shadow-2xl p-2 min-w-[120px]" style={{ zIndex: 9999 }}>
+                      <div className="text-xs text-[hsl(var(--reader-text))]/50 font-semibold mb-2 px-3 tracking-wide">SPEED</div>
+                      {speedPresets.map((speed) => (
+                        <Menu.Item
+                          key={speed}
+                          onClick={() => controls.setSpeed(speed)}
+                          className="flex items-center justify-between px-3 py-2.5 text-sm text-[hsl(var(--reader-text))] hover:bg-[hsl(var(--reader-text))]/5 rounded-lg cursor-pointer transition-colors duration-200"
+                        >
+                          <span className="font-medium">{speed}x</span>
+                          {state.speed === speed && <Check className="w-4 h-4 text-[hsl(var(--reader-accent))]" />}
+                        </Menu.Item>
+                      ))}
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.Root>
+
+              <ModeToggle mode={mode || 'listening'} onModeChange={onModeChange || (() => {})} />
+
+              <button
+                onClick={onToggleNav}
+                className="group flex items-center justify-center w-10 h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95 flex-shrink-0"
+                aria-label="Open menu"
+              >
+                <MenuIcon className="w-[18px] h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+              </button>
             </div>
           </div>
-
-          {/* Right: Speed + Mode + Menu */}
-          <div className="flex items-center gap-1">
-            <Menu.Root>
-              <Menu.Trigger
-                render={
-                  <Button variant="ghost" size="icon" className="hover:bg-accent/50 h-7 w-7" />
-                }
-              >
-                <Gauge className="w-3 h-3" />
-              </Menu.Trigger>
-              <Menu.Portal>
-                <Menu.Positioner sideOffset={8} style={{ zIndex: 9999 }}>
-                  <Menu.Popup className="rounded-lg bg-gray-900 p-2 shadow-xl min-w-[100px]" style={{ zIndex: 9999 }}>
-                    <div className="text-[10px] text-gray-400 mb-1 px-2">Speed</div>
-                    {speedPresets.map((speed) => (
-                      <Menu.Item
-                        key={speed}
-                        onClick={() => controls.setSpeed(speed)}
-                        className="flex items-center justify-between px-2 py-1.5 text-xs text-white hover:bg-gray-800 rounded cursor-pointer"
-                      >
-                        <span>{speed}x</span>
-                        {state.speed === speed && <Check className="w-3 h-3" />}
-                      </Menu.Item>
-                    ))}
-                  </Menu.Popup>
-                </Menu.Positioner>
-              </Menu.Portal>
-            </Menu.Root>
-            {mode && onModeChange && <ModeToggle mode={mode} onModeChange={onModeChange} />}
-            {onToggleNav && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onToggleNav}
-                className="hover:bg-accent/50 h-7 w-7"
-              >
-                <MenuIcon className="w-3.5 h-3.5" />
-              </Button>
-            )}
-          </div>
         </div>
+
+        {/* Subtle bottom shadow */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--reader-text))]/5 to-transparent" />
       </div>
     </div>
   );

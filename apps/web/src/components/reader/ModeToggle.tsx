@@ -18,25 +18,25 @@ export function ModeToggle({ mode, onModeChange, className = '' }: ModeTogglePro
       onValueChange={(value) => onModeChange(value as ReaderMode)}
       className={className}
     >
-      <Tabs.List className="relative inline-flex items-center p-1 bg-black/[0.06] dark:bg-white/[0.06] rounded-lg">
+      <Tabs.List className="relative inline-flex items-center p-1 bg-[hsl(var(--reader-text))]/5 backdrop-blur-sm rounded-xl border border-[hsl(var(--reader-text))]/8">
         <Tabs.Tab
           value="reading"
-          className="relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-xs transition-all duration-200 outline-none text-black/40 dark:text-white/40 data-[selected]:text-black dark:data-[selected]:text-white"
+          className="relative z-10 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-[13px] transition-all duration-300 outline-none text-[hsl(var(--reader-text))]/40 data-[selected]:text-[hsl(var(--reader-text))] hover:text-[hsl(var(--reader-text))]/60"
         >
-          <Book className="w-3.5 h-3.5" />
-          <span>Read</span>
+          <Book className="w-4 h-4" />
+          <span className="tracking-wide">Read</span>
         </Tabs.Tab>
 
         <Tabs.Tab
           value="listening"
-          className="relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium text-xs transition-all duration-200 outline-none text-black/40 dark:text-white/40 data-[selected]:text-black dark:data-[selected]:text-white"
+          className="relative z-10 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-[13px] transition-all duration-300 outline-none text-[hsl(var(--reader-text))]/40 data-[selected]:text-[hsl(var(--reader-text))] hover:text-[hsl(var(--reader-text))]/60"
         >
-          <Headphones className="w-3.5 h-3.5" />
-          <span>Listen</span>
+          <Headphones className="w-4 h-4" />
+          <span className="tracking-wide">Listen</span>
         </Tabs.Tab>
 
         <Tabs.Indicator
-          className="absolute bg-white dark:bg-white/10 rounded-md shadow-sm transition-all duration-300 ease-out"
+          className="absolute bg-[hsl(var(--reader-bg))] border border-[hsl(var(--reader-text))]/10 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all duration-300 ease-out"
           style={{
             left: 'var(--active-tab-left)',
             width: 'var(--active-tab-width)',

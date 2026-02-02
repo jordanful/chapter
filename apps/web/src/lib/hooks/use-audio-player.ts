@@ -31,6 +31,8 @@ export interface UseAudioPlayerOptions {
   chunks: AudioChunk[];
   onPositionChange?: (position: number, chunkId?: string) => void;
   onChunkChange?: (chunkIndex: number) => void;
+  initialChunkId?: string;
+  initialTime?: number;
 }
 
 export function useAudioPlayer({
@@ -39,6 +41,8 @@ export function useAudioPlayer({
   chunks,
   onPositionChange,
   onChunkChange,
+  initialChunkId,
+  initialTime,
 }: UseAudioPlayerOptions) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [state, setState] = useState<AudioPlayerState>({
@@ -223,12 +227,45 @@ export function useAudioPlayer({
     };
   }, [chunks, state.currentChunkIndex, onPositionChange, nextChunk]);
 
-  // Load initial chunk
+  // Load initial chunk (or restored chunk)
   useEffect(() => {
     if (chunks.length > 0 && !audioRef.current?.src) {
-      loadChunk(0);
+      console.log('[Audio Player Init]', {
+        initialChunkId,
+        initialTime,
+        chunksCount: chunks.length,
+      });
+
+      // Find initial chunk index if we have an initialChunkId
+      let chunkIndex = 0;
+      if (initialChunkId) {
+        const foundIndex = chunks.findIndex(c => c.id === initialChunkId);
+        if (foundIndex !== -1) {
+          chunkIndex = foundIndex;
+          console.log('[Audio Player] Found initial chunk at index', chunkIndex);
+        } else {
+          console.log('[Audio Player] Initial chunk not found, using index 0');
+        }
+      }
+
+      loadChunk(chunkIndex);
+
+      // Seek to initial time after chunk loads
+      if (initialTime !== undefined && initialTime > 0) {
+        console.log('[Audio Player] Will seek to', initialTime);
+        const seekWhenReady = () => {
+          if (audioRef.current && audioRef.current.readyState >= 1) {
+            audioRef.current.currentTime = initialTime;
+            setState(prev => ({ ...prev, currentTime: initialTime }));
+            console.log('[Audio Player] Seeked to', initialTime);
+          } else if (audioRef.current) {
+            setTimeout(seekWhenReady, 100);
+          }
+        };
+        setTimeout(seekWhenReady, 200);
+      }
     }
-  }, [chunks, loadChunk]);
+  }, [chunks, loadChunk, initialChunkId, initialTime]);
 
   // Apply initial speed and volume
   useEffect(() => {

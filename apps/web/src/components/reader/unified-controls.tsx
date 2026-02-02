@@ -91,76 +91,92 @@ export function UnifiedControls({
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ${
-        isVisible ? 'translate-y-0' : 'translate-y-full'
+      className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-500 ease-out ${
+        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
       }`}
     >
-      <div className="bg-[hsl(var(--reader-bg))]/98 backdrop-blur-lg border-t border-border/50 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
-        {/* Progress bar */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-foreground/5">
+      {/* Refined gradient backdrop */}
+      <div className="relative bg-gradient-to-b from-[hsl(var(--reader-bg))]/95 via-[hsl(var(--reader-bg))]/98 to-[hsl(var(--reader-bg))] backdrop-blur-2xl border-t border-[hsl(var(--reader-text))]/8">
+        {/* Elegant top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--reader-accent))]/30 to-transparent" />
+
+        {/* Refined progress bar */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-[hsl(var(--reader-text))]/4">
           <div
-            className="h-full bg-[hsl(var(--reader-accent))] transition-all duration-300 ease-out"
+            className="h-full bg-gradient-to-r from-[hsl(var(--reader-accent))]/80 to-[hsl(var(--reader-accent))] shadow-[0_0_8px_rgba(var(--reader-accent-rgb),0.3)] transition-all duration-500 ease-out"
             style={{ width: `${bookProgress}%` }}
           />
         </div>
 
-        <div className="max-w-[42rem] mx-auto px-3 py-2 flex items-center justify-between gap-3">
-          {/* Left: Back + Book info */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onBack}
-              className="hover:bg-accent/50 transition-colors h-8 w-8 shrink-0"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
+        <div className="max-w-5xl mx-auto px-6 py-5">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-8">
+            {/* Left: Back button + Book info */}
+            <div className="flex items-center gap-4 min-w-0">
+              <button
+                onClick={onBack}
+                className="group flex items-center justify-center w-10 h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
+                aria-label="Back to library"
+              >
+                <ArrowLeft className="w-[18px] h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+              </button>
 
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xs font-medium truncate text-[hsl(var(--reader-text))]">
-                {book?.title}
-              </h1>
-              <p className="text-[11px] text-muted-foreground">
-                Ch. {currentChapter + 1}/{totalChapters} • {Math.round(bookProgress)}%
-              </p>
+              <div className="flex flex-col min-w-0 gap-1">
+                <h1 className="text-base font-semibold truncate text-[hsl(var(--reader-text))] tracking-tight leading-none">
+                  {book?.title}
+                </h1>
+                <p className="text-[13px] text-[hsl(var(--reader-text))]/50 font-medium tracking-wide leading-none">
+                  Chapter {currentChapter + 1} of {totalChapters}
+                </p>
+              </div>
+            </div>
+
+            {/* Center: Chapter navigation */}
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={onPrevChapter}
+                disabled={!hasPrev}
+                className="group flex items-center justify-center w-11 h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95"
+                aria-label="Previous chapter"
+              >
+                <ChevronLeft className="w-5 h-5 text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+              </button>
+
+              {/* Progress indicator */}
+              <div className="flex items-center justify-center min-w-[60px] h-11 px-4 rounded-full bg-[hsl(var(--reader-text))]/5 border border-[hsl(var(--reader-text))]/8">
+                <span className="text-sm font-semibold text-[hsl(var(--reader-text))]/70 tabular-nums">
+                  {Math.round(bookProgress)}%
+                </span>
+              </div>
+
+              <button
+                onClick={onNextChapter}
+                disabled={!hasNext}
+                className="group flex items-center justify-center w-11 h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95"
+                aria-label="Next chapter"
+              >
+                <ChevronRight className="w-5 h-5 text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+              </button>
+            </div>
+
+            {/* Right: Mode toggle + Menu */}
+            <div className="flex items-center gap-3">
+              <div className="scale-110 origin-right">
+                <ModeToggle mode={mode} onModeChange={onModeChange} />
+              </div>
+
+              <button
+                onClick={onToggleNav}
+                className="group flex items-center justify-center w-10 h-10 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
+                aria-label="Open menu"
+              >
+                <Menu className="w-[18px] h-[18px] text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
+              </button>
             </div>
           </div>
-
-          {/* Center: Navigation */}
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onPrevChapter}
-              disabled={!hasPrev}
-              className="hover:bg-accent/50 disabled:opacity-40 h-8 w-8"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onNextChapter}
-              disabled={!hasNext}
-              className="hover:bg-accent/50 disabled:opacity-40 h-8 w-8"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Right: Mode + Menu */}
-          <div className="flex items-center gap-1">
-            <ModeToggle mode={mode} onModeChange={onModeChange} />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onToggleNav}
-              className="hover:bg-accent/50 transition-colors h-8 w-8"
-            >
-              <Menu className="w-4 h-4" />
-            </Button>
-          </div>
         </div>
+
+        {/* Subtle bottom shadow */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--reader-text))]/5 to-transparent" />
       </div>
     </div>
   );

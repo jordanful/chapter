@@ -82,9 +82,15 @@ export function ReadAlongView({ chapter, currentWordIndex, isLoading }: ReadAlon
           {chapter.paragraphs?.map((paragraph: any, pIndex: number) => {
             const cleanedText = fixEncodingIssues(paragraph.text);
             const words = cleanedText.split(/(\s+)/);
+
+            // Calculate paragraph start index by summing previous paragraphs + separators
             const paragraphStartIndex = chapter.paragraphs
               .slice(0, pIndex)
-              .reduce((sum: number, p: any) => sum + p.text.split(/(\s+)/).length, 0);
+              .reduce((sum: number, p: any, idx: number) => {
+                const pWords = p.text.split(/(\s+)/).length;
+                // Add 1 for the \n\n separator after each paragraph (except the last)
+                return sum + pWords + 1; // +1 for separator
+              }, 0);
 
             return (
               <p
@@ -110,11 +116,21 @@ export function ReadAlongView({ chapter, currentWordIndex, isLoading }: ReadAlon
                     <span
                       key={wIndex}
                       ref={isHighlighted ? highlightedWordRef : null}
-                      className={`transition-all duration-150 ${
+                      className={`transition-all duration-200 ${
                         isHighlighted
-                          ? 'bg-[hsl(var(--reader-accent))]/20 text-[hsl(var(--reader-accent))] font-semibold px-1 -mx-1 rounded'
+                          ? 'text-[hsl(var(--reader-accent))] relative inline-block'
                           : ''
                       }`}
+                      style={
+                        isHighlighted
+                          ? {
+                              textShadow: '0 0 12px hsla(var(--reader-accent-rgb), 0.3)',
+                              background: 'linear-gradient(to bottom, transparent 0%, hsla(var(--reader-accent-rgb), 0.15) 0%, hsla(var(--reader-accent-rgb), 0.15) 100%, transparent 100%)',
+                              backgroundSize: '100% 100%',
+                              borderRadius: '2px',
+                            }
+                          : undefined
+                      }
                     >
                       {word}
                     </span>
