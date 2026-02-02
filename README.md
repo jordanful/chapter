@@ -28,7 +28,7 @@ Open **http://localhost** and create your account.
 - **Local AI voices** — High-quality TTS via [Kokoro](https://github.com/hexgrad/kokoro), no API costs
 - **9 voices** — American and British, male and female
 - **Library folders** — Auto-import books from filesystem folders (like Plex/Calibre)
-- **Multi-user** — Each user has their own library and progress
+- **Multi-user** _(coming soon)_ — Each user has their own library and progress
 - **Self-hosted** — Your books, your server, your data
 
 ## Requirements
