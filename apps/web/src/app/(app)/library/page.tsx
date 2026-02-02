@@ -9,7 +9,7 @@ import { UploadingBookCard } from '@/components/library/uploading-book-card';
 import { UploadButton } from '@/components/library/upload-button';
 import { Bookshelf } from '@/components/library/bookshelf';
 import { Select } from '@base-ui/react/select';
-import { Settings, Search, X, ChevronDown, Check } from 'lucide-react';
+import { Settings, Search, X, ChevronDown, Check, Star } from 'lucide-react';
 
 // Smart search that matches title, author, and handles common variations
 function smartMatch(book: any, query: string): boolean {
@@ -62,6 +62,7 @@ export default function LibraryPage() {
   } = useBooks();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'added' | 'title' | 'author'>('added');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
 
@@ -70,6 +71,11 @@ export default function LibraryPage() {
     let result = searchQuery.trim()
       ? books.filter((book) => smartMatch(book, searchQuery))
       : [...books];
+
+    // Apply favorites filter
+    if (showFavoritesOnly) {
+      result = result.filter((book) => book.isFavorite);
+    }
 
     // Sort books
     result.sort((a, b) => {
@@ -91,7 +97,7 @@ export default function LibraryPage() {
     });
 
     return result;
-  }, [books, searchQuery, sortBy]);
+  }, [books, searchQuery, sortBy, showFavoritesOnly]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -236,6 +242,19 @@ export default function LibraryPage() {
                     </button>
                   )}
                 </div>
+                <button
+                  onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                  className={`flex items-center justify-center w-11 h-11 rounded-full transition-all duration-300 shrink-0 ${
+                    showFavoritesOnly
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                      : 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 border border-white/0 hover:border-white/10'
+                  }`}
+                  title={showFavoritesOnly ? 'Show all books' : 'Show favorites only'}
+                >
+                  <Star
+                    className={`w-[18px] h-[18px] ${showFavoritesOnly ? 'fill-current' : ''}`}
+                  />
+                </button>
                 <Select.Root
                   value={sortBy}
                   onValueChange={(value) => value && setSortBy(value as any)}

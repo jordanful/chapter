@@ -23,7 +23,9 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
 
       // Open Library returns a 43-byte placeholder for missing covers
       if (buffer.byteLength <= 100) {
-        app.log.warn(`Cover proxy: Placeholder image received - ${url} (${buffer.byteLength} bytes)`);
+        app.log.warn(
+          `Cover proxy: Placeholder image received - ${url} (${buffer.byteLength} bytes)`
+        );
         return reply.code(404).send({ error: 'No cover image available' });
       }
 
@@ -150,43 +152,47 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
 
   // Get EPUB file (for epub.js rendering)
   // Supports both Authorization header and ?token query param (for epub.js URL loading)
-  app.get('/:bookId/epub', {
-    preValidation: async (request, reply) => {
-      // First try normal JWT verification from header
-      try {
-        await request.jwtVerify();
-        return;
-      } catch {
-        // If header auth fails, try query param token
-        const { token } = request.query as { token?: string };
-        if (token) {
-          try {
-            const decoded = app.jwt.verify(token);
-            (request as any).user = decoded;
-            return;
-          } catch {
-            // Token invalid
+  app.get(
+    '/:bookId/epub',
+    {
+      preValidation: async (request, reply) => {
+        // First try normal JWT verification from header
+        try {
+          await request.jwtVerify();
+          return;
+        } catch {
+          // If header auth fails, try query param token
+          const { token } = request.query as { token?: string };
+          if (token) {
+            try {
+              const decoded = app.jwt.verify(token);
+              (request as any).user = decoded;
+              return;
+            } catch {
+              // Token invalid
+            }
           }
+          reply.code(401).send({ error: 'Unauthorized' });
         }
-        reply.code(401).send({ error: 'Unauthorized' });
-      }
+      },
     },
-  }, async (request, reply) => {
-    try {
-      const userId = (request.user as any).userId;
-      const { bookId } = request.params as any;
+    async (request, reply) => {
+      try {
+        const userId = (request.user as any).userId;
+        const { bookId } = request.params as any;
 
-      const { buffer, filename } = await booksService.getEpubFile(userId, bookId);
+        const { buffer, filename } = await booksService.getEpubFile(userId, bookId);
 
-      return reply
-        .type('application/epub+zip')
-        .header('Content-Disposition', `inline; filename="${encodeURIComponent(filename)}"`)
-        .send(buffer);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch EPUB';
-      return reply.code(404).send({ error: message });
+        return reply
+          .type('application/epub+zip')
+          .header('Content-Disposition', `inline; filename="${encodeURIComponent(filename)}"`)
+          .send(buffer);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch EPUB';
+        return reply.code(404).send({ error: message });
+      }
     }
-  });
+  );
 
   // Delete book
   app.delete('/:bookId', async (request, reply) => {
@@ -211,8 +217,7 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
       const covers = await booksService.getAlternativeCovers(userId, bookId);
       return reply.send(covers);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to fetch alternative covers';
+      const message = error instanceof Error ? error.message : 'Failed to fetch alternative covers';
       return reply.code(500).send({ error: message });
     }
   });
@@ -236,8 +241,7 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
       await booksService.updateCoverFromOpenLibrary(userId, bookId, coverUrl);
       return reply.send({ success: true });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to update cover';
+      const message = error instanceof Error ? error.message : 'Failed to update cover';
       return reply.code(500).send({ error: message });
     }
   });
@@ -261,8 +265,26 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
       await booksService.updateMetadata(userId, bookId, metadata);
       return reply.send({ success: true });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to update metadata';
+      const message = error instanceof Error ? error.message : 'Failed to update metadata';
+      return reply.code(500).send({ error: message });
+    }
+  });
+
+  // Toggle favorite status
+  app.put('/:bookId/favorite', async (request, reply) => {
+    try {
+      const userId = (request.user as any).userId;
+      const { bookId } = request.params as any;
+      const { isFavorite } = request.body as { isFavorite: boolean };
+
+      if (typeof isFavorite !== 'boolean') {
+        return reply.code(400).send({ error: 'isFavorite is required and must be a boolean' });
+      }
+
+      await booksService.setFavorite(userId, bookId, isFavorite);
+      return reply.send({ success: true, isFavorite });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update favorite status';
       return reply.code(500).send({ error: message });
     }
   });

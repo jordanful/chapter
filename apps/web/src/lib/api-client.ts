@@ -25,10 +25,7 @@ class APIClient {
     }
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
@@ -196,19 +193,29 @@ class APIClient {
     });
   }
 
-  async updateBookMetadata(bookId: string, metadata: {
-    title?: string;
-    author?: string;
-    isbn?: string;
-    publisher?: string;
-    language?: string;
-    description?: string;
-    publishedYear?: string;
-    coverUrl?: string;
-  }): Promise<void> {
+  async updateBookMetadata(
+    bookId: string,
+    metadata: {
+      title?: string;
+      author?: string;
+      isbn?: string;
+      publisher?: string;
+      language?: string;
+      description?: string;
+      publishedYear?: string;
+      coverUrl?: string;
+    }
+  ): Promise<void> {
     await this.request<void>(`/books/${bookId}`, {
       method: 'PATCH',
       body: JSON.stringify(metadata),
+    });
+  }
+
+  async toggleFavorite(bookId: string, isFavorite: boolean): Promise<void> {
+    await this.request<void>(`/books/${bookId}/favorite`, {
+      method: 'PUT',
+      body: JSON.stringify({ isFavorite }),
     });
   }
 

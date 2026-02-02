@@ -38,6 +38,14 @@ export function useBooks() {
     },
   });
 
+  const favoriteMutation = useMutation({
+    mutationFn: ({ bookId, isFavorite }: { bookId: string; isFavorite: boolean }) =>
+      apiClient.toggleFavorite(bookId, isFavorite),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['books'] });
+    },
+  });
+
   const uploadBooks = useCallback(
     async (files: File[]) => {
       // Create placeholder entries for all files - first few are uploading, rest are queued
@@ -126,6 +134,13 @@ export function useBooks() {
     [removeUpload]
   );
 
+  const toggleFavorite = useCallback(
+    async (bookId: string, isFavorite: boolean) => {
+      await favoriteMutation.mutateAsync({ bookId, isFavorite });
+    },
+    [favoriteMutation]
+  );
+
   return {
     books: books || [],
     isLoading,
@@ -134,6 +149,7 @@ export function useBooks() {
     uploadingBooks,
     dismissUploadError,
     deleteBook: deleteMutation.mutateAsync,
+    toggleFavorite,
     isUploading:
       uploadMutation.isPending ||
       uploadingBooks.some(

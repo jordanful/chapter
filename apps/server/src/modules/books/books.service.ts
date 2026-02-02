@@ -276,6 +276,19 @@ export class BooksService {
       data: updateData,
     });
   }
+
+  async setFavorite(userId: string, bookId: string, isFavorite: boolean): Promise<void> {
+    // Verify user has access and update favorite status
+    await prisma.userBook.update({
+      where: {
+        userId_bookId: {
+          userId,
+          bookId,
+        },
+      },
+      data: { isFavorite },
+    });
+  }
 }
 
 export const booksService = new BooksService();
