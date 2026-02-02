@@ -143,7 +143,8 @@ export const ttsRoutes: FastifyPluginAsync = async (app) => {
         // Create chunks
         const chunks = chunker.chunk(chapter.textContent, chapter.startPosition);
 
-        // Generate audio for all chunks
+        // Generate first chunk only, return immediately
+        // Background generation of remaining chunks happens in generateChapterAudio
         const audioChunks = await audioCacheService.generateChapterAudio(
           bookId,
           chapterId,

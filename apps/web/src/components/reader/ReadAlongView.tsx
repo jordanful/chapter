@@ -1,18 +1,42 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { fixEncodingIssues } from '@/lib/text-cleanup';
 
 interface ReadAlongViewProps {
   chapter: any;
-  currentWordIndex: number;
+  currentWordIndex?: number | null; // null or undefined = no highlighting
   isLoading: boolean;
+  onScrollProgress?: (percentage: number) => void;
+  enableAutoScroll?: boolean; // Auto-scroll to highlighted word
 }
 
-export function ReadAlongView({ chapter, currentWordIndex, isLoading }: ReadAlongViewProps) {
+export function ReadAlongView({
+  chapter,
+  currentWordIndex = null,
+  isLoading,
+  onScrollProgress,
+  enableAutoScroll = false,
+}: ReadAlongViewProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const highlightedWordRef = useRef<HTMLSpanElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+
+  const isHighlighting = currentWordIndex !== null && currentWordIndex !== undefined;
+
+  // Track scroll progress
+  const handleScroll = useCallback(() => {
+    if (!onScrollProgress) return;
+    const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+    const scrollable = scrollHeight - clientHeight;
+    const percentage = scrollable > 0 ? (scrollTop / scrollable) * 100 : 0;
+    onScrollProgress(percentage);
+  }, [onScrollProgress]);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   // Animate content in when chapter loads
   useEffect(() => {
@@ -23,15 +47,31 @@ export function ReadAlongView({ chapter, currentWordIndex, isLoading }: ReadAlon
     }
   }, [chapter, isLoading]);
 
-  // Auto-scroll to keep highlighted word in view (smoothly)
+  // Auto-scroll to keep highlighted word in view (accounting for audio player)
   useEffect(() => {
-    if (highlightedWordRef.current) {
-      highlightedWordRef.current.scrollIntoView({
+    if (!enableAutoScroll || !highlightedWordRef.current) return;
+
+    const element = highlightedWordRef.current;
+    const rect = element.getBoundingClientRect();
+    const audioPlayerHeight = 140; // Height of fixed audio player at bottom
+    const topPadding = 100; // Space from top of viewport
+
+    // Calculate visible area (viewport minus audio player)
+    const visibleTop = topPadding;
+    const visibleBottom = window.innerHeight - audioPlayerHeight;
+
+    // Check if word is outside the safe visible area
+    if (rect.top < visibleTop || rect.bottom > visibleBottom) {
+      // Calculate scroll position to center word in the safe area
+      const safeAreaCenter = visibleTop + (visibleBottom - visibleTop) / 2;
+      const scrollTarget = window.scrollY + rect.top - safeAreaCenter;
+
+      window.scrollTo({
+        top: Math.max(0, scrollTarget),
         behavior: 'smooth',
-        block: 'center',
       });
     }
-  }, [currentWordIndex]);
+  }, [currentWordIndex, enableAutoScroll]);
 
   if (isLoading) {
     return (
@@ -105,7 +145,7 @@ export function ReadAlongView({ chapter, currentWordIndex, isLoading }: ReadAlon
               >
                 {words.map((word: string, wIndex: number) => {
                   const globalWordIndex = paragraphStartIndex + wIndex;
-                  const isHighlighted = globalWordIndex === currentWordIndex;
+                  const isWordHighlighted = isHighlighting && globalWordIndex === currentWordIndex;
                   const isWhitespace = /^\s+$/.test(word);
 
                   if (isWhitespace) {
@@ -115,14 +155,10 @@ export function ReadAlongView({ chapter, currentWordIndex, isLoading }: ReadAlon
                   return (
                     <span
                       key={wIndex}
-                      ref={isHighlighted ? highlightedWordRef : null}
-                      className={`transition-all duration-200 ${
-                        isHighlighted
-                          ? 'text-[hsl(var(--reader-accent))] relative inline-block'
-                          : ''
-                      }`}
+                      ref={isWordHighlighted ? highlightedWordRef : null}
+                      className={isWordHighlighted ? 'text-[hsl(var(--reader-accent))] relative inline-block' : ''}
                       style={
-                        isHighlighted
+                        isWordHighlighted
                           ? {
                               textShadow: '0 0 12px hsla(var(--reader-accent-rgb), 0.3)',
                               background: 'linear-gradient(to bottom, transparent 0%, hsla(var(--reader-accent-rgb), 0.15) 0%, hsla(var(--reader-accent-rgb), 0.15) 100%, transparent 100%)',

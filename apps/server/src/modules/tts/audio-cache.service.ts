@@ -228,39 +228,41 @@ export class AudioCacheService {
   ): Promise<CachedAudio[]> {
     const results: CachedAudio[] = [];
 
-    // Generate only first chunk immediately for fast playback start
-    if (chunks.length > 0) {
-      const firstChunk = chunks[0];
-      const firstAudio = await this.getOrGenerateAudio({
-        text: firstChunk.text,
-        voiceId,
-        settings,
-        bookId,
-        chapterId,
-        startPosition: firstChunk.startPosition,
-        endPosition: firstChunk.endPosition,
-      });
-      results.push(firstAudio);
-
-      // Pre-generate next 2 chunks in background (non-blocking)
-      setImmediate(async () => {
-        for (let i = 1; i < Math.min(3, chunks.length); i++) {
-          try {
-            await this.getOrGenerateAudio({
-              text: chunks[i].text,
-              voiceId,
-              settings,
-              bookId,
-              chapterId,
-              startPosition: chunks[i].startPosition,
-              endPosition: chunks[i].endPosition,
-            });
-          } catch (error) {
-            console.error(`Background generation failed for chunk ${i}:`, error);
-          }
-        }
-      });
+    if (chunks.length === 0) {
+      return results;
     }
+
+    // Generate first chunk immediately for fast playback start
+    const firstChunk = chunks[0];
+    const firstAudio = await this.getOrGenerateAudio({
+      text: firstChunk.text,
+      voiceId,
+      settings,
+      bookId,
+      chapterId,
+      startPosition: firstChunk.startPosition,
+      endPosition: firstChunk.endPosition,
+    });
+    results.push(firstAudio);
+
+    // Pre-generate next chunks in background (non-blocking)
+    setImmediate(async () => {
+      for (let i = 1; i < Math.min(4, chunks.length); i++) {
+        try {
+          await this.getOrGenerateAudio({
+            text: chunks[i].text,
+            voiceId,
+            settings,
+            bookId,
+            chapterId,
+            startPosition: chunks[i].startPosition,
+            endPosition: chunks[i].endPosition,
+          });
+        } catch (error) {
+          console.error(`Background generation failed for chunk ${i}:`, error);
+        }
+      }
+    });
 
     return results;
   }

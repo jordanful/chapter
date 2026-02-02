@@ -9,7 +9,7 @@ import { UploadingBookCard } from '@/components/library/uploading-book-card';
 import { UploadButton } from '@/components/library/upload-button';
 import { Bookshelf } from '@/components/library/bookshelf';
 import { Select } from '@base-ui/react/select';
-import { Settings, BookOpen, Search, X, ChevronDown, Check } from 'lucide-react';
+import { Settings, Search, X, ChevronDown, Check } from 'lucide-react';
 
 // Smart search that matches title, author, and handles common variations
 function smartMatch(book: any, query: string): boolean {
@@ -305,16 +305,18 @@ export default function LibraryPage() {
             </div>
           </div>
         ) : allItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center px-4">
-            <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-8 max-w-md">
-              <BookOpen className="w-16 h-16 text-amber-200/60 mx-auto mb-4" />
-              <p className="text-xl text-white/90 mb-2">
-                Your library is empty
-              </p>
-              <p className="text-white/60 mb-6">
-                Drag and drop EPUBs here, click to upload, or add a folder in Settings to auto-import
-              </p>
-              <UploadButton variant="shelf" size="lg" />
+          <div className="relative">
+            {/* Empty shelves */}
+            <Bookshelf>{[]}</Bookshelf>
+
+            {/* Floating prompt */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="pointer-events-auto text-center">
+                <p className="text-white/70 text-sm mb-3">
+                  Drop EPUBs here to get started
+                </p>
+                <UploadButton variant="shelf" size="sm" />
+              </div>
             </div>
           </div>
         ) : (
