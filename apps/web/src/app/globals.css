@@ -2,43 +2,96 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Bookerly - Kindle's reading font */
+@font-face {
+  font-family: 'Bookerly';
+  src: url('/fonts/Bookerly.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bookerly';
+  src: url('/fonts/Bookerly Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bookerly';
+  src: url('/fonts/Bookerly Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bookerly';
+  src: url('/fonts/Bookerly Bold Italic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bookerly';
+  src: url('/fonts/Bookerly Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bookerly';
+  src: url('/fonts/Bookerly Light Italic.ttf') format('truetype');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
 @layer base {
   :root {
-    /* Classic warm reading palette - cream paper with rich text */
-    --background: 35 30% 96%;
-    --foreground: 30 10% 15%;
-    --card: 35 30% 96%;
-    --card-foreground: 30 10% 15%;
-    --popover: 35 30% 96%;
-    --popover-foreground: 30 10% 15%;
-    --primary: 30 10% 15%;
-    --primary-foreground: 35 30% 96%;
-    --secondary: 35 20% 90%;
-    --secondary-foreground: 30 10% 15%;
-    --muted: 35 20% 90%;
-    --muted-foreground: 30 8% 40%;
-    --accent: 35 25% 88%;
-    --accent-foreground: 30 10% 15%;
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 35 30% 96%;
-    --border: 35 15% 85%;
-    --input: 35 15% 85%;
-    --ring: 30 10% 15%;
     --radius: 0.25rem;
-
-    /* Reading-specific */
-    --reader-bg: 35 30% 96%;
-    --reader-text: 30 10% 15%;
-    --reader-accent: 30 50% 45%;
   }
 
+  /* Light theme - clean white with good contrast */
+  :root,
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 0 0% 10%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 10%;
+
+    /* Reading-specific */
+    --reader-bg: 0 0% 100%;
+    --reader-text: 0 0% 10%;
+    --reader-accent: 220 70% 50%;
+  }
+
+  /* Dark theme - sophisticated warm blacks */
   .dark {
-    /* Sophisticated dark mode - warm blacks with soft contrast */
     --background: 30 10% 8%;
     --foreground: 35 25% 92%;
     --card: 30 10% 8%;
     --card-foreground: 35 25% 92%;
-    --popover: 30 10% 8%;
+    --popover: 30 10% 12%;
     --popover-foreground: 35 25% 92%;
     --primary: 35 25% 92%;
     --primary-foreground: 30 10% 8%;
@@ -59,6 +112,41 @@
     --reader-text: 35 25% 92%;
     --reader-accent: 35 50% 65%;
   }
+
+  /* Sepia theme - warm paper-like reading experience */
+  .sepia {
+    --background: 35 40% 92%;
+    --foreground: 30 30% 15%;
+    --card: 35 40% 92%;
+    --card-foreground: 30 30% 15%;
+    --popover: 35 40% 92%;
+    --popover-foreground: 30 30% 15%;
+    --primary: 30 30% 15%;
+    --primary-foreground: 35 40% 92%;
+    --secondary: 35 35% 85%;
+    --secondary-foreground: 30 30% 15%;
+    --muted: 35 35% 85%;
+    --muted-foreground: 30 20% 40%;
+    --accent: 35 35% 82%;
+    --accent-foreground: 30 30% 15%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 35 40% 92%;
+    --border: 35 25% 80%;
+    --input: 35 25% 80%;
+    --ring: 30 30% 15%;
+
+    /* Reading-specific */
+    --reader-bg: 35 40% 92%;
+    --reader-text: 30 30% 15%;
+    --reader-accent: 30 60% 40%;
+  }
+}
+
+/* Ensure book covers always render naturally regardless of theme */
+.book-cover img {
+  filter: none;
+  mix-blend-mode: normal;
+  isolation: isolate;
 }
 
 @layer base {
@@ -101,6 +189,40 @@
     .reader-content {
       font-size: 1.3125rem; /* 21px */
       line-height: 1.9; /* 39.9px */
+    }
+  }
+
+  /* Font size modifiers for reader content */
+  .font-size-small .reader-content {
+    font-size: 1rem; /* 16px base */
+  }
+  @media (min-width: 640px) {
+    .font-size-small .reader-content {
+      font-size: 1.0625rem;
+    }
+  }
+  @media (min-width: 768px) {
+    .font-size-small .reader-content {
+      font-size: 1.125rem;
+    }
+  }
+
+  .font-size-large .reader-content {
+    font-size: 1.25rem; /* 20px base */
+  }
+  @media (min-width: 640px) {
+    .font-size-large .reader-content {
+      font-size: 1.375rem;
+    }
+  }
+  @media (min-width: 768px) {
+    .font-size-large .reader-content {
+      font-size: 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .font-size-large .reader-content {
+      font-size: 1.625rem;
     }
   }
 
@@ -313,31 +435,12 @@
 }
 
 /* Book styling on shelf */
-.shelf-book .group {
-  transform-origin: bottom center;
-  transition: transform 0.25s ease-out, filter 0.25s ease-out;
-  transform-style: preserve-3d;
-}
-
-.shelf-book .group:hover {
-  transform: perspective(800px) rotateX(-12deg) translateY(-4px);
-}
-
 .shelf-book .book-cover {
   box-shadow:
     0 4px 8px rgba(0, 0, 0, 0.4),
     0 8px 16px rgba(0, 0, 0, 0.2),
     3px 0 6px rgba(0, 0, 0, 0.15),
     -2px 0 4px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.25s ease-out;
-}
-
-.shelf-book .group:hover .book-cover {
-  box-shadow:
-    0 8px 16px rgba(0, 0, 0, 0.5),
-    0 16px 32px rgba(0, 0, 0, 0.3),
-    3px 0 8px rgba(0, 0, 0, 0.2),
-    -2px 0 6px rgba(0, 0, 0, 0.15);
 }
 
 /* Responsive shelf adjustments */

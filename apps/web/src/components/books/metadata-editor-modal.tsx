@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Image as ImageIcon, Info, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { useAlternativeCovers } from '@/lib/hooks/use-books';
+import { useAlternativeCovers } from '@/lib/hooks/use-cover-picker';
+import { apiClient } from '@/lib/api-client';
 
 interface MetadataEditorModalProps {
   book: any;
@@ -31,8 +33,33 @@ export function MetadataEditorModal({ book, isOpen, onClose, onSave }: MetadataE
     coverUrl: '',
   });
 
-  const { data: alternativeCovers, isLoading: coversLoading } = useAlternativeCovers(book?.id);
+  const { data: alternativeCovers, isLoading: coversLoading, error: coversError } = useAlternativeCovers(book?.id, isOpen);
   const [selectedCoverUrl, setSelectedCoverUrl] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+  const [imageLoading, setImageLoading] = useState<Set<number>>(new Set());
+  const [currentCoverUrl, setCurrentCoverUrl] = useState<string | null>(null);
+
+  // Only render on client side
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Proxy Open Library images through server to bypass CORS
+  const proxyImageUrl = (url: string) => {
+    if (url.startsWith('https://covers.openlibrary.org/')) {
+      // Always use relative URL to avoid CORS issues
+      return `/api/books/cover-proxy?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  };
+
+  // Strip HTML tags from text
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
 
   // Initialize form with book data
   useEffect(() => {
@@ -43,25 +70,83 @@ export function MetadataEditorModal({ book, isOpen, onClose, onSave }: MetadataE
         isbn: book.isbn || '',
         publisher: book.publisher || '',
         language: book.language || '',
-        description: book.description || '',
+        description: book.description ? stripHtml(book.description) : '',
         publishedYear: book.publishedYear || '',
         coverUrl: book.coverUrl || '',
       });
       setSelectedCoverUrl(null);
+      setImageErrors(new Set());
+      setImageLoading(new Set());
     }
   }, [book, isOpen]);
 
-  if (!isOpen) return null;
+  // Load current cover when modal opens
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    // Clear previous cover first
+    setCurrentCoverUrl(prev => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+
+    if (!book?.coverPath) {
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const blob = await apiClient.getCover(book.id);
+        if (!cancelled) {
+          const objectUrl = URL.createObjectURL(blob);
+          setCurrentCoverUrl(objectUrl);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Failed to load current cover:', error);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, book?.id, book?.coverPath]);
+
+  // Cleanup cover URL on unmount
+  useEffect(() => {
+    return () => {
+      setCurrentCoverUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    };
+  }, []);
+
+  // Initialize loading state for alternative covers
+  useEffect(() => {
+    if (alternativeCovers && alternativeCovers.length > 0) {
+      setImageLoading(new Set(alternativeCovers.map((_, i) => i)));
+    }
+  }, [alternativeCovers]);
+
+  if (!isOpen || !mounted) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
+    const dataToSave = {
+      ...formData,
+      coverUrl: selectedCoverUrl || formData.coverUrl,
+    };
+
     try {
-      await onSave({
-        ...formData,
-        coverUrl: selectedCoverUrl || formData.coverUrl,
-      });
+      await onSave(dataToSave);
       onClose();
     } catch (error) {
       console.error('Failed to save metadata:', error);
@@ -81,7 +166,7 @@ export function MetadataEditorModal({ book, isOpen, onClose, onSave }: MetadataE
     { id: 'advanced' as const, label: 'Advanced', icon: <Settings className="w-4 h-4" /> },
   ];
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="relative w-full max-w-5xl h-[90vh] bg-[#1a1a1a] rounded-lg shadow-2xl flex overflow-hidden">
         {/* Header */}
@@ -227,12 +312,16 @@ export function MetadataEditorModal({ book, isOpen, onClose, onSave }: MetadataE
                 <div>
                   <h3 className="text-sm font-medium text-gray-300 mb-4">Current Cover</h3>
                   <div className="w-48 h-72 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-700">
-                    {book?.coverPath ? (
+                    {currentCoverUrl ? (
                       <img
-                        src={`/api/books/${book.id}/cover`}
+                        src={currentCoverUrl}
                         alt={book.title}
                         className="w-full h-full object-cover"
                       />
+                    ) : book?.coverPath ? (
+                      <div className="w-full h-full flex items-center justify-center text-gray-500">
+                        <div className="animate-spin h-5 w-5 border-2 border-gray-600 border-t-white rounded-full" />
+                      </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-500">
                         No cover
@@ -245,6 +334,8 @@ export function MetadataEditorModal({ book, isOpen, onClose, onSave }: MetadataE
                   <h3 className="text-sm font-medium text-gray-300 mb-4">Alternative Covers</h3>
                   {coversLoading ? (
                     <div className="text-sm text-gray-400">Loading alternatives...</div>
+                  ) : coversError ? (
+                    <div className="text-sm text-red-400">Failed to load covers: {coversError.message}</div>
                   ) : alternativeCovers && alternativeCovers.length > 0 ? (
                     <div className="grid grid-cols-4 gap-4">
                       {alternativeCovers.map((cover: any, index: number) => (
@@ -258,11 +349,40 @@ export function MetadataEditorModal({ book, isOpen, onClose, onSave }: MetadataE
                               : 'hover:ring-2 ring-gray-600'
                           }`}
                         >
-                          <img
-                            src={cover.coverUrl}
-                            alt={cover.editionTitle || 'Alternative cover'}
-                            className="w-full h-full object-cover"
-                          />
+                          {imageErrors.has(index) ? (
+                            <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                              Failed to load
+                            </div>
+                          ) : (
+                            <>
+                              <img
+                                src={proxyImageUrl(cover.coverUrl)}
+                                alt={cover.editionTitle || 'Alternative cover'}
+                                className="w-full h-full object-cover"
+                                onLoad={() => {
+                                  setImageLoading(prev => {
+                                    const next = new Set(prev);
+                                    next.delete(index);
+                                    return next;
+                                  });
+                                }}
+                                onError={(e) => {
+                                  console.error('Failed to load cover:', cover.coverUrl, e);
+                                  setImageErrors(prev => new Set(prev).add(index));
+                                  setImageLoading(prev => {
+                                    const next = new Set(prev);
+                                    next.delete(index);
+                                    return next;
+                                  });
+                                }}
+                              />
+                              {imageLoading.has(index) && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                                  <div className="animate-spin h-5 w-5 border-2 border-gray-600 border-t-white rounded-full" />
+                                </div>
+                              )}
+                            </>
+                          )}
                           {cover.year && (
                             <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-xs text-white py-1 px-2 text-center">
                               {cover.year}
@@ -370,6 +490,7 @@ export function MetadataEditorModal({ book, isOpen, onClose, onSave }: MetadataE
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -77,6 +77,16 @@ export function CoverPickerDialog({ book, isOpen, onClose }: CoverPickerDialogPr
   } = useAlternativeCovers(book.id, isOpen);
 
   const updateCover = useUpdateCover(book.id);
+
+  // Transform Open Library URLs to use our proxy
+  const proxyUrl = (url: string) => {
+    if (url.startsWith('https://covers.openlibrary.org/')) {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
+      return `${apiUrl}/books/cover-proxy?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+  };
+
   const validCovers = covers?.filter(c => !failedCovers.has(c.coverUrl)) || [];
 
   useEffect(() => {
@@ -200,7 +210,7 @@ export function CoverPickerDialog({ book, isOpen, onClose }: CoverPickerDialogPr
                       )}
                     >
                       <CoverImage
-                        src={cover.coverUrl}
+                        src={proxyUrl(cover.coverUrl)}
                         alt={cover.editionTitle || 'Alternative cover'}
                         className="w-full h-full object-cover"
                         onError={() => {

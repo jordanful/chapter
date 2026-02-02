@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { useBook, useBookStructure, useChapter } from '@/lib/hooks/use-books';
 import { useGenerateAudio, useAudioChunks } from '@/lib/hooks/use-tts';
 import { useProgress } from '@/lib/hooks/use-progress';
-import { ReaderView } from '@/components/reader/reader-view';
+import { ChapterReader } from '@/components/reader/ChapterReader';
 import { ChapterNav } from '@/components/reader/chapter-nav';
 import { AudioPlayer } from '@/components/reader/AudioPlayer';
 import { ReaderMode } from '@/components/reader/ModeToggle';
@@ -39,27 +39,34 @@ export default function ReaderPage() {
   const chapterId = structure?.chapters[currentChapter]?.id;
   const { data: audioChunks, refetch: refetchChunks } = useAudioChunks(bookId, chapterId || '');
 
-  // Callbacks (must be before any early returns)
-  const handleScrollChange = useCallback((scrollPos: number) => {
-    setCurrentScrollProgress(scrollPos);
-    updateProgress({
-      chapterIndex: currentChapter,
-      chapterId: chapterId,
-      scrollPosition: scrollPos,
-    });
-  }, [currentChapter, chapterId, updateProgress]);
+  // Handle scroll progress updates
+  const handleScrollProgress = useCallback(
+    (percentage: number) => {
+      setCurrentScrollProgress(percentage);
+      updateProgress({
+        chapterIndex: currentChapter,
+        chapterId: chapterId,
+        scrollPosition: percentage,
+        percentage: ((currentChapter + percentage / 100) / (structure?.chapters.length || 1)) * 100,
+      });
+    },
+    [currentChapter, chapterId, structure, updateProgress]
+  );
 
-  const handlePositionChange = useCallback((position: number, chunkId?: string) => {
-    setCurrentAudioTime(position);
-    if (chunkId) setCurrentAudioChunk(chunkId);
+  const handlePositionChange = useCallback(
+    (position: number, chunkId?: string) => {
+      setCurrentAudioTime(position);
+      if (chunkId) setCurrentAudioChunk(chunkId);
 
-    updateProgress({
-      chapterIndex: currentChapter,
-      chapterId: chapterId,
-      audioTimestamp: position,
-      audioChunkId: chunkId,
-    });
-  }, [currentChapter, chapterId, updateProgress]);
+      updateProgress({
+        chapterIndex: currentChapter,
+        chapterId: chapterId,
+        audioTimestamp: position,
+        audioChunkId: chunkId,
+      });
+    },
+    [currentChapter, chapterId, updateProgress]
+  );
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -71,7 +78,7 @@ export default function ReaderPage() {
   useEffect(() => {
     if (progress && !isProgressRestored) {
       setCurrentChapter(progress.chapterIndex);
-      // Map database mode ('audio') to frontend mode ('listening')
+      setCurrentScrollProgress(progress.scrollPosition || 0);
       const restoredMode = progress.mode === 'audio' ? 'listening' : 'reading';
       setMode(restoredMode);
       setIsProgressRestored(true);
@@ -93,17 +100,15 @@ export default function ReaderPage() {
           await generate({
             bookId,
             chapterId,
-            voiceId: 'af_bella', // TODO: Get from user settings
+            voiceId: 'af_bella',
             settings: {
               speed: 1.0,
               temperature: 0.7,
             },
           });
-          // Refetch chunks after generation
           refetchChunks();
         } catch (error) {
           console.error('Failed to generate audio:', error);
-          // Fall back to reading mode if generation fails
           setMode('reading');
         }
       }
@@ -129,7 +134,6 @@ export default function ReaderPage() {
       const newChapter = currentChapter - 1;
       setCurrentChapter(newChapter);
       setCurrentScrollProgress(0);
-      window.scrollTo(0, 0);
       updateProgress({
         chapterIndex: newChapter,
         chapterId: structure?.chapters[newChapter]?.id,
@@ -144,7 +148,6 @@ export default function ReaderPage() {
       const newChapter = currentChapter + 1;
       setCurrentChapter(newChapter);
       setCurrentScrollProgress(0);
-      window.scrollTo(0, 0);
       updateProgress({
         chapterIndex: newChapter,
         chapterId: structure?.chapters[newChapter]?.id,
@@ -158,11 +161,9 @@ export default function ReaderPage() {
     const oldMode = mode;
     setMode(newMode);
 
-    // Get chapter text for position conversion
     const chapterText = chapter?.paragraphs?.map((p: any) => p.text).join('\n\n') || '';
 
     if (newMode === 'listening' && oldMode === 'reading') {
-      // Convert reading position to audio position
       if (audioChunks && audioChunks.length > 0 && chapterText) {
         const audioPos = readingToAudioPosition(
           currentScrollProgress,
@@ -187,8 +188,7 @@ export default function ReaderPage() {
         }
       }
     } else if (newMode === 'reading' && oldMode === 'listening') {
-      // Convert audio position to reading position
-      if (audioChunks && audioChunks.length > 0 && chapterText && progress?.audioChunkId) {
+      if (audioChunks && audioChunks.length > 0 && progress?.audioChunkId) {
         const scrollPos = audioToReadingPosition(
           progress.audioChunkId,
           progress.audioTimestamp || 0,
@@ -207,22 +207,10 @@ export default function ReaderPage() {
           mode: 'reading',
           scrollPosition: scrollPos,
         });
-
-        // Scroll to the position
-        setTimeout(() => {
-          const documentHeight = document.documentElement.scrollHeight;
-          const windowHeight = window.innerHeight;
-          const trackLength = documentHeight - windowHeight;
-          if (trackLength > 0) {
-            const scrollTop = (scrollPos / 100) * trackLength;
-            window.scrollTo({ top: scrollTop, behavior: 'smooth' });
-          }
-        }, 100);
         return;
       }
     }
 
-    // Fallback: just switch mode without position conversion
     updateProgress({
       chapterIndex: currentChapter,
       chapterId: chapterId,
@@ -232,7 +220,6 @@ export default function ReaderPage() {
 
   const currentChapterData = structure?.chapters[currentChapter];
 
-  // Calculate real-time book progress (rough estimate)
   const estimatedProgress = structure
     ? ((currentChapter + currentScrollProgress / 100) / structure.chapters.length) * 100
     : progress?.percentage || 0;
@@ -245,8 +232,8 @@ export default function ReaderPage() {
           currentChapter={currentChapter}
           onSelectChapter={(index) => {
             setCurrentChapter(index);
+            setCurrentScrollProgress(0);
             setShowNav(false);
-            window.scrollTo(0, 0);
           }}
           onClose={() => setShowNav(false)}
         />
@@ -255,17 +242,13 @@ export default function ReaderPage() {
       {/* Reading View */}
       {mode === 'reading' && (
         <>
-          <ReaderView
-            chapter={chapter}
-            isLoading={chapterLoading}
-            onPrevChapter={goToPrevChapter}
-            onNextChapter={goToNextChapter}
-            hasPrev={currentChapter > 0}
-            hasNext={structure ? currentChapter < structure.chapters.length - 1 : false}
-            onScrollChange={handleScrollChange}
-            initialScrollPosition={progress?.scrollPosition}
-            bookProgress={estimatedProgress}
-          />
+          <div className="pb-24">
+            <ChapterReader
+              chapter={chapter}
+              isLoading={chapterLoading}
+              onScrollProgress={handleScrollProgress}
+            />
+          </div>
           <UnifiedControls
             book={book}
             currentChapter={currentChapter}
@@ -294,7 +277,6 @@ export default function ReaderPage() {
             </div>
           ) : audioChunks && audioChunks.length > 0 ? (
             <>
-              {/* Read-along view with word highlighting */}
               <ReadAlongView
                 chapter={chapter}
                 currentWordIndex={
@@ -315,7 +297,6 @@ export default function ReaderPage() {
                 isLoading={chapterLoading}
               />
 
-              {/* Audio Player */}
               <AudioPlayer
                 bookId={bookId}
                 chapterId={chapterId || ''}

@@ -69,7 +69,7 @@ export function UploadButton({ variant = 'default', size = 'sm' }: UploadButtonP
         disabled={isUploading}
         size={size}
         className={cn(
-          isShelf && 'bg-amber-900/80 hover:bg-amber-800 text-amber-100 border border-amber-700/50 shadow-lg'
+          isShelf && 'h-10 bg-amber-900/80 hover:bg-amber-800 text-amber-100 border border-amber-700/50 shadow-lg'
         )}
       >
         {isShelf ? (

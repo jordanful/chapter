@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu } from '@base-ui/react/menu';
 import { Tooltip } from '@base-ui/react/tooltip';
 import { apiClient } from '@/lib/api-client';
 import { offlineStorage } from '@/lib/offline-storage';
-import { Download, Check, Loader2, MoreHorizontal, ImageIcon, BookOpen } from 'lucide-react';
+import { Download, Check, Loader2, MoreHorizontal, ImageIcon, BookOpen, Edit } from 'lucide-react';
 
 // Generate a consistent color based on the book title
 function getBookColor(title: string): string {
@@ -33,6 +33,8 @@ function getBookColor(title: string): string {
 }
 import { useDownload } from '@/lib/hooks/use-download';
 import { CoverPickerDialog } from './cover-picker-dialog';
+import { MetadataEditorModal } from '../books/metadata-editor-modal';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface BookCardProps {
   book: any;
@@ -40,37 +42,67 @@ interface BookCardProps {
 
 export function BookCard({ book }: BookCardProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [showCoverPicker, setShowCoverPicker] = useState(false);
+  const [showMetadataEditor, setShowMetadataEditor] = useState(false);
   const { downloadBook, isDownloading, progress } = useDownload();
 
-  useEffect(() => {
-    loadCover();
-    checkDownloaded();
-  }, [book.id]);
+  const loadCover = useCallback(async (forceReload = false) => {
+    const bookId = book.id;
+    const coverPath = book.coverPath;
 
-  const loadCover = async () => {
     try {
-      const offlineCover = await offlineStorage.getCover(book.id);
+      const offlineCover = await offlineStorage.getCover(bookId);
       if (offlineCover) {
-        setCoverUrl(URL.createObjectURL(offlineCover));
+        const url = URL.createObjectURL(offlineCover);
+        setCoverUrl(prev => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
         return;
       }
 
-      if (book.coverPath) {
-        const blob = await apiClient.getCover(book.id);
-        setCoverUrl(URL.createObjectURL(blob));
+      if (coverPath) {
+        const blob = await apiClient.getCover(bookId);
+        const url = URL.createObjectURL(blob);
+        setCoverUrl(prev => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+      } else if (forceReload) {
+        setCoverUrl(prev => {
+          if (prev) URL.revokeObjectURL(prev);
+          return null;
+        });
       }
     } catch (error) {
-      console.error('Failed to load cover:', error);
+      console.error('Failed to load cover for book:', bookId, error);
     }
-  };
+  }, [book.id, book.coverPath]);
 
-  const checkDownloaded = async () => {
+  const checkDownloaded = useCallback(async () => {
     const downloaded = await offlineStorage.isBookDownloaded(book.id);
     setIsDownloaded(downloaded);
-  };
+  }, [book.id]);
+
+  // Initial load
+  useEffect(() => {
+    loadCover(false);
+    checkDownloaded();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [book.id]); // Only reload when book.id changes
+
+  // Cleanup on unmount only
+  useEffect(() => {
+    return () => {
+      setCoverUrl(prev => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    };
+  }, []);
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -83,6 +115,16 @@ export function BookCard({ book }: BookCardProps) {
       }
     }
   };
+
+  const handleSaveMetadata = useCallback(async (metadata: any) => {
+    const bookId = book.id;
+    console.log('Saving metadata for book:', bookId, metadata);
+    await apiClient.updateBookMetadata(bookId, metadata);
+    // Wait for the books query to refetch so we have fresh data
+    await queryClient.refetchQueries({ queryKey: ['books'] });
+    // Force reload cover since it may have been updated
+    loadCover(true);
+  }, [book.id, queryClient, loadCover]);
 
   return (
     <div className="group w-full">
@@ -168,6 +210,28 @@ export function BookCard({ book }: BookCardProps) {
 
             {/* Right side buttons */}
             <div className="flex items-center gap-1.5">
+              {/* Edit button */}
+              <Tooltip.Provider>
+                <Tooltip.Root>
+                  <Tooltip.Trigger
+                    className="flex items-center justify-center w-8 h-8 rounded-full bg-black/70 hover:bg-black/90 text-white shadow-lg backdrop-blur-sm transition-all duration-150 hover:scale-105 active:scale-95"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMetadataEditor(true);
+                    }}
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal>
+                    <Tooltip.Positioner sideOffset={8}>
+                      <Tooltip.Popup className="rounded-lg bg-gray-900 px-3 py-2 text-sm text-white shadow-xl">
+                        Edit metadata
+                      </Tooltip.Popup>
+                    </Tooltip.Positioner>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+              </Tooltip.Provider>
+
               {/* Download button */}
               {!isDownloaded && (
                 <Tooltip.Provider>
@@ -193,46 +257,6 @@ export function BookCard({ book }: BookCardProps) {
                   </Tooltip.Root>
                 </Tooltip.Provider>
               )}
-
-              {/* Menu */}
-              <Menu.Root>
-                <Tooltip.Provider>
-                  <Tooltip.Root>
-                    <Menu.Trigger
-                      className="flex items-center justify-center w-8 h-8 rounded-full bg-black/70 hover:bg-black/90 text-white shadow-lg backdrop-blur-sm transition-all duration-150 hover:scale-105 active:scale-95"
-                      onClick={(e) => e.stopPropagation()}
-                      render={
-                        <Tooltip.Trigger />
-                      }
-                    >
-                      <MoreHorizontal className="w-3.5 h-3.5" />
-                    </Menu.Trigger>
-                    <Tooltip.Portal>
-                      <Tooltip.Positioner sideOffset={8}>
-                        <Tooltip.Popup className="rounded-lg bg-gray-900 px-3 py-2 text-sm text-white shadow-xl">
-                          More options
-                        </Tooltip.Popup>
-                      </Tooltip.Positioner>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
-                </Tooltip.Provider>
-                <Menu.Portal>
-                  <Menu.Positioner sideOffset={8} align="end">
-                    <Menu.Popup className="min-w-[180px] rounded-xl bg-popover border border-border p-1.5 shadow-xl">
-                      <Menu.Item
-                        className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg cursor-pointer outline-none data-[highlighted]:bg-accent transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowCoverPicker(true);
-                        }}
-                      >
-                        <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                        <span>Change cover</span>
-                      </Menu.Item>
-                    </Menu.Popup>
-                  </Menu.Positioner>
-                </Menu.Portal>
-              </Menu.Root>
             </div>
           </div>
 
@@ -256,6 +280,14 @@ export function BookCard({ book }: BookCardProps) {
           setShowCoverPicker(false);
           loadCover();
         }}
+      />
+
+      {/* Metadata Editor Modal */}
+      <MetadataEditorModal
+        book={book}
+        isOpen={showMetadataEditor}
+        onClose={() => setShowMetadataEditor(false)}
+        onSave={handleSaveMetadata}
       />
     </div>
   );

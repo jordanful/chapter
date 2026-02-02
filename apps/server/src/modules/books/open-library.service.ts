@@ -131,6 +131,8 @@ class OpenLibraryService {
 
         if (edition.covers && edition.covers.length > 0) {
           for (const coverId of edition.covers) {
+            // Skip invalid/negative cover IDs
+            if (coverId <= 0) continue;
             const url = `https://covers.openlibrary.org/b/id/${coverId}-${COVER_SIZE}.jpg`;
             if (!covers.some((c) => c.coverUrl === url)) {
               covers.push({
@@ -175,8 +177,8 @@ class OpenLibraryService {
       const docs = data.docs || [];
 
       for (const doc of docs) {
-        // Add cover from search result
-        if (doc.cover_i) {
+        // Add cover from search result (skip invalid/negative IDs)
+        if (doc.cover_i && doc.cover_i > 0) {
           covers.push({
             isbn: doc.isbn?.[0],
             coverUrl: `https://covers.openlibrary.org/b/id/${doc.cover_i}-${COVER_SIZE}.jpg`,
@@ -214,8 +216,9 @@ class OpenLibraryService {
 
         if (edition.covers && edition.covers.length > 0) {
           const isbn = edition.isbn_13?.[0] || edition.isbn_10?.[0];
-          for (const coverId of edition.covers.slice(0, 2)) {
-            // Limit covers per edition
+          // Filter out negative IDs and limit to 2 covers per edition
+          const validCovers = edition.covers.filter(id => id > 0).slice(0, 2);
+          for (const coverId of validCovers) {
             covers.push({
               isbn,
               coverUrl: `https://covers.openlibrary.org/b/id/${coverId}-${COVER_SIZE}.jpg`,

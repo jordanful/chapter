@@ -104,47 +104,47 @@ export function UnifiedControls({
           />
         </div>
 
-        <div className="max-w-[42rem] mx-auto px-4 py-2 flex items-center justify-between gap-4">
+        <div className="max-w-[42rem] mx-auto px-3 py-2 flex items-center justify-between gap-3">
           {/* Left: Back + Book info */}
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <Button
               variant="ghost"
               size="icon"
               onClick={onBack}
-              className="hover:bg-accent/50 transition-colors h-7 w-7"
+              className="hover:bg-accent/50 transition-colors h-8 w-8 shrink-0"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="w-4 h-4" />
             </Button>
 
             <div className="flex-1 min-w-0">
-              <h1 className="text-[11px] font-serif font-medium truncate text-[hsl(var(--reader-text))] leading-tight">
+              <h1 className="text-xs font-medium truncate text-[hsl(var(--reader-text))]">
                 {book?.title}
               </h1>
-              <p className="text-[9px] text-muted-foreground font-medium tracking-wide leading-tight">
+              <p className="text-[11px] text-muted-foreground">
                 Ch. {currentChapter + 1}/{totalChapters} • {Math.round(bookProgress)}%
               </p>
             </div>
           </div>
 
           {/* Center: Navigation */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center">
             <Button
               variant="ghost"
               size="icon"
               onClick={onPrevChapter}
               disabled={!hasPrev}
-              className="hover:bg-accent/50 disabled:opacity-40 h-7 w-7"
+              className="hover:bg-accent/50 disabled:opacity-40 h-8 w-8"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="w-4 h-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={onNextChapter}
               disabled={!hasNext}
-              className="hover:bg-accent/50 disabled:opacity-40 h-7 w-7"
+              className="hover:bg-accent/50 disabled:opacity-40 h-8 w-8"
             >
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
 
@@ -155,9 +155,9 @@ export function UnifiedControls({
               variant="ghost"
               size="icon"
               onClick={onToggleNav}
-              className="hover:bg-accent/50 transition-colors h-7 w-7"
+              className="hover:bg-accent/50 transition-colors h-8 w-8"
             >
-              <Menu className="w-3.5 h-3.5" />
+              <Menu className="w-4 h-4" />
             </Button>
           </div>
         </div>

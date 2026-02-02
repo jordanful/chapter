@@ -17,8 +17,13 @@ const generateChapterSchema = z.object({
 
 export const ttsRoutes: FastifyPluginAsync = async (app) => {
   app.addHook('onRequest', async (request, reply) => {
-    // Skip authentication for audio streaming (chunk IDs are unguessable UUIDs)
-    if (request.routeOptions.url?.includes('/audio/') || request.url.includes('/audio/')) {
+    // Skip authentication for public endpoints
+    const publicPaths = ['/audio/', '/health', '/voices', '/preview'];
+    const isPublic = publicPaths.some(
+      (path) => request.routeOptions.url?.includes(path) || request.url.includes(path)
+    );
+
+    if (isPublic) {
       return;
     }
 
@@ -51,6 +56,44 @@ export const ttsRoutes: FastifyPluginAsync = async (app) => {
       }
     } catch (error) {
       return reply.code(503).send({ status: 'error', service: 'kokoro' });
+    }
+  });
+
+  // Preview/test voice with sample text
+  app.post('/preview', async (request, reply) => {
+    try {
+      const body = z
+        .object({
+          voiceId: z.string(),
+          speed: z.number().min(0.5).max(2.0).optional().default(1.0),
+          temperature: z.number().min(0).max(1).optional().default(0.7),
+        })
+        .parse(request.body);
+
+      const sampleText =
+        'The quick brown fox jumps over the lazy dog. This is a test of the text to speech system.';
+
+      const result = await kokoroService.generateSpeech({
+        text: sampleText,
+        voiceId: body.voiceId,
+        settings: {
+          speed: body.speed,
+          temperature: body.temperature,
+        },
+      });
+      const audioBuffer = result.audioData;
+
+      return reply
+        .header('Content-Type', 'audio/wav')
+        .header('Content-Length', audioBuffer.length)
+        .send(audioBuffer);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return reply.code(400).send({ error: 'Invalid input', details: error.errors });
+      }
+
+      const message = error instanceof Error ? error.message : 'Failed to generate preview';
+      return reply.code(500).send({ error: message });
     }
   });
 

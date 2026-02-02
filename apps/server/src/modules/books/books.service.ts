@@ -20,11 +20,25 @@ export class BooksService {
             id: true,
             title: true,
             author: true,
+            isbn: true,
+            publisher: true,
+            language: true,
+            description: true,
             coverPath: true,
+            filePath: true,
+            fileSize: true,
+            fileHash: true,
+            epubMetadata: true,
             totalWords: true,
             totalCharacters: true,
             totalChapters: true,
             createdAt: true,
+            updatedAt: true,
+            readingProgress: {
+              where: { userId },
+              select: { lastReadAt: true },
+              take: 1,
+            },
           },
         },
       },
@@ -40,6 +54,7 @@ export class BooksService {
       rating: ub.rating,
       tags: ub.tags,
       addedAt: ub.addedAt,
+      lastReadAt: ub.book.readingProgress[0]?.lastReadAt || null,
     }));
   }
 
@@ -80,6 +95,7 @@ export class BooksService {
         id: true,
         index: true,
         title: true,
+        href: true,
         wordCount: true,
         charCount: true,
         startPosition: true,
@@ -165,6 +181,19 @@ export class BooksService {
     return await readFile(book.coverPath);
   }
 
+  async getEpubFile(userId: string, bookId: string): Promise<{ buffer: Buffer; filename: string }> {
+    const book = await this.getBookById(userId, bookId);
+
+    if (!book.filePath) {
+      throw new Error('EPUB file not found');
+    }
+
+    const buffer = await readFile(book.filePath);
+    const filename = `${book.title || 'book'}.epub`;
+
+    return { buffer, filename };
+  }
+
   async getAlternativeCovers(
     userId: string,
     bookId: string
@@ -191,9 +220,12 @@ export class BooksService {
 
     // Determine file extension from URL or default to jpg
     const extension = coverUrl.includes('.png') ? 'png' : 'jpg';
-    const coverFilename = `cover.${extension}`;
-    const bookDir = path.dirname(book.filePath);
-    const coverPath = path.join(bookDir, coverFilename);
+
+    // Use the book's fileHash to create a unique cover path
+    // The filePath is like: {booksPath}/{fileHash}.epub
+    // We want: {booksPath}/{fileHash}-cover.{ext}
+    const fileHash = path.basename(book.filePath, '.epub');
+    const coverPath = path.join(path.dirname(book.filePath), `${fileHash}-cover.${extension}`);
 
     // Delete old cover if it exists and is different
     if (book.coverPath && book.coverPath !== coverPath) {

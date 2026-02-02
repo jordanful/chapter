@@ -29,7 +29,7 @@ export interface UseAudioPlayerOptions {
   bookId: string;
   chapterId: string;
   chunks: AudioChunk[];
-  onPositionChange?: (position: number) => void;
+  onPositionChange?: (position: number, chunkId?: string) => void;
   onChunkChange?: (chunkIndex: number) => void;
 }
 

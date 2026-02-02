@@ -1,24 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Select } from '@base-ui/react/select';
 import { Slider } from '@base-ui/react/slider';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useTTS } from '@/lib/hooks/use-tts';
+import { useSettingsStore, type Theme, type FontSize } from '@/lib/stores/settings-store';
+import { apiClient } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Volume2, ChevronDown, Check } from 'lucide-react';
+import { ArrowLeft, Volume2, ChevronDown, Check, Sun, Moon, BookOpen } from 'lucide-react';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, user, logout } = useAuth();
   const { voices, voicesLoading, isHealthy } = useTTS();
+  const { theme, fontSize, tts, setTheme, setFontSize, setTTSSettings } = useSettingsStore();
 
-  const [selectedVoice, setSelectedVoice] = useState('af_bella');
-  const [speed, setSpeed] = useState(1.0);
-  const [temperature, setTemperature] = useState(0.7);
-  const [fontSize, setFontSize] = useState('medium');
   const [testingVoice, setTestingVoice] = useState(false);
+  const [testError, setTestError] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -27,10 +28,61 @@ export default function SettingsPage() {
   }, [isAuthenticated, authLoading, router]);
 
   const testVoice = async () => {
+    if (!isHealthy) {
+      setTestError('TTS service is offline. Start Kokoro to test voices.');
+      return;
+    }
+
     setTestingVoice(true);
-    // TODO: Implement voice test
-    setTimeout(() => setTestingVoice(false), 2000);
+    setTestError(null);
+
+    try {
+      const audioBlob = await apiClient.previewVoice(tts.voiceId, tts.speed, tts.temperature);
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      // Clean up previous audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+
+      // Play the audio
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setTestingVoice(false);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.onerror = () => {
+        setTestingVoice(false);
+        setTestError('Failed to play audio');
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audio.play();
+    } catch (error) {
+      setTestingVoice(false);
+      const message = error instanceof Error ? error.message : 'Failed to test voice';
+      // Provide more helpful error messages
+      if (message.includes('Failed to generate')) {
+        setTestError('TTS service error. Make sure Kokoro is running.');
+      } else {
+        setTestError(message);
+      }
+    }
   };
+
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+    };
+  }, []);
 
   if (authLoading) {
     return (
@@ -114,8 +166,8 @@ export default function SettingsPage() {
                 <p className="text-sm text-muted-foreground">Loading voices...</p>
               ) : (
                 <Select.Root
-                  value={selectedVoice}
-                  onValueChange={(value) => value && setSelectedVoice(value)}
+                  value={tts.voiceId}
+                  onValueChange={(value) => value && setTTSSettings({ voiceId: value })}
                 >
                   <Select.Trigger className="flex items-center justify-between w-full h-11 px-4 rounded-xl border border-input bg-background hover:bg-accent/50 transition-colors">
                     <Select.Value placeholder="Select a voice" />
@@ -152,11 +204,11 @@ export default function SettingsPage() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="text-sm font-medium">Speed</label>
-                <span className="text-sm font-medium text-primary">{speed.toFixed(1)}x</span>
+                <span className="text-sm font-medium text-primary">{tts.speed.toFixed(1)}x</span>
               </div>
               <Slider.Root
-                value={speed}
-                onValueChange={setSpeed}
+                value={tts.speed}
+                onValueChange={(value) => setTTSSettings({ speed: value })}
                 min={0.5}
                 max={2.0}
                 step={0.1}
@@ -181,12 +233,12 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between mb-3">
                 <label className="text-sm font-medium">Voice Variation</label>
                 <span className="text-sm font-medium text-primary">
-                  {temperature.toFixed(1)}
+                  {tts.temperature.toFixed(1)}
                 </span>
               </div>
               <Slider.Root
-                value={temperature}
-                onValueChange={setTemperature}
+                value={tts.temperature}
+                onValueChange={(value) => setTTSSettings({ temperature: value })}
                 min={0.0}
                 max={1.0}
                 step={0.1}
@@ -207,15 +259,20 @@ export default function SettingsPage() {
             </div>
 
             {/* Test Voice */}
-            <Button
-              onClick={testVoice}
-              disabled={testingVoice || !isHealthy}
-              className="w-full"
-              variant="outline"
-            >
-              <Volume2 className="w-4 h-4 mr-2" />
-              {testingVoice ? 'Testing...' : 'Test Voice'}
-            </Button>
+            <div className="space-y-2">
+              <Button
+                onClick={testVoice}
+                disabled={testingVoice || !isHealthy}
+                className="w-full"
+                variant="outline"
+              >
+                <Volume2 className="w-4 h-4 mr-2" />
+                {testingVoice ? 'Playing...' : 'Test Voice'}
+              </Button>
+              {testError && (
+                <p className="text-sm text-destructive text-center">{testError}</p>
+              )}
+            </div>
           </div>
         </section>
 
@@ -225,7 +282,7 @@ export default function SettingsPage() {
           <div className="space-y-6">
             <div>
               <label className="text-sm font-medium mb-2 block">Font Size</label>
-              <Select.Root value={fontSize} onValueChange={(value) => value && setFontSize(value)}>
+              <Select.Root value={fontSize} onValueChange={(value) => value && setFontSize(value as FontSize)}>
                 <Select.Trigger className="flex items-center justify-between w-full h-11 px-4 rounded-xl border border-input bg-background hover:bg-accent/50 transition-colors">
                   <Select.Value placeholder="Select font size" />
                   <Select.Icon>
@@ -256,13 +313,37 @@ export default function SettingsPage() {
             <div>
               <label className="text-sm font-medium mb-2 block">Theme</label>
               <div className="grid grid-cols-3 gap-2">
-                <button className="h-11 px-4 rounded-xl border border-input hover:bg-accent/50 transition-colors font-medium">
+                <button
+                  onClick={() => setTheme('light')}
+                  className={`h-11 px-4 rounded-xl border transition-colors font-medium flex items-center justify-center gap-2 ${
+                    theme === 'light'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-input hover:bg-accent/50'
+                  }`}
+                >
+                  <Sun className="w-4 h-4" />
                   Light
                 </button>
-                <button className="h-11 px-4 rounded-xl border border-input hover:bg-accent/50 transition-colors font-medium">
+                <button
+                  onClick={() => setTheme('dark')}
+                  className={`h-11 px-4 rounded-xl border transition-colors font-medium flex items-center justify-center gap-2 ${
+                    theme === 'dark'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-input hover:bg-accent/50'
+                  }`}
+                >
+                  <Moon className="w-4 h-4" />
                   Dark
                 </button>
-                <button className="h-11 px-4 rounded-xl border border-input hover:bg-accent/50 transition-colors font-medium">
+                <button
+                  onClick={() => setTheme('sepia')}
+                  className={`h-11 px-4 rounded-xl border transition-colors font-medium flex items-center justify-center gap-2 ${
+                    theme === 'sepia'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-input hover:bg-accent/50'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4" />
                   Sepia
                 </button>
               </div>

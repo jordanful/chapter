@@ -155,6 +155,31 @@ class APIClient {
     });
   }
 
+  async getEpubFile(bookId: string): Promise<ArrayBuffer> {
+    const headers: HeadersInit = {};
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    // Use relative URL to go through Next.js proxy
+    const response = await fetch(`/api/books/${bookId}/epub`, {
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch EPUB file');
+    }
+
+    return response.arrayBuffer();
+  }
+
+  getEpubUrl(bookId: string): string {
+    // Use relative URL to go through Next.js proxy (avoids CORS issues)
+    // The token is passed as query param since epub.js can't set headers
+    const params = this.token ? `?token=${encodeURIComponent(this.token)}` : '';
+    return `/api/books/${bookId}/epub${params}`;
+  }
+
   async getAlternativeCovers(bookId: string): Promise<AlternativeCover[]> {
     return this.request<AlternativeCover[]>(`/books/${bookId}/covers/alternatives`);
   }
@@ -163,6 +188,22 @@ class APIClient {
     await this.request<void>(`/books/${bookId}/cover`, {
       method: 'PUT',
       body: JSON.stringify({ coverUrl }),
+    });
+  }
+
+  async updateBookMetadata(bookId: string, metadata: {
+    title?: string;
+    author?: string;
+    isbn?: string;
+    publisher?: string;
+    language?: string;
+    description?: string;
+    publishedYear?: string;
+    coverUrl?: string;
+  }): Promise<void> {
+    await this.request<void>(`/books/${bookId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(metadata),
     });
   }
 
@@ -185,6 +226,27 @@ class APIClient {
 
   async getTTSHealth(): Promise<any> {
     return this.request<any>('/tts/health');
+  }
+
+  async previewVoice(voiceId: string, speed: number, temperature: number): Promise<Blob> {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_URL}/tts/preview`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ voiceId, speed, temperature }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to generate voice preview');
+    }
+
+    return response.blob();
   }
 
   // User Settings

@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -137,6 +137,9 @@ model ReadingProgress {
   paragraphIndex  Int @default(0)
   tokenIndex      Int @default(0)
   charPosition    Int @default(0) // Global character offset
+
+  // EPUB CFI for epub.js position restoration
+  epubCfi         String? // Canonical Fragment Identifier
 
   // Percentage (0-100, precomputed for quick display)
   percentage      Float @default(0)

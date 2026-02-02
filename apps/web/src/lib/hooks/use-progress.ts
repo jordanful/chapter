@@ -7,6 +7,7 @@ export interface ReadingProgress {
   chapterId?: string;
   paragraphIndex: number;
   charPosition: number;
+  epubCfi?: string;
   percentage: number;
   scrollPosition: number;
   audioTimestamp: number;
@@ -20,10 +21,12 @@ export interface ProgressUpdate {
   chapterId?: string;
   paragraphIndex?: number;
   charPosition?: number;
+  epubCfi?: string;
   scrollPosition?: number;
   audioTimestamp?: number;
   audioChunkId?: string;
   mode?: 'reading' | 'audio';
+  percentage?: number;
 }
 
 const AUTOSAVE_INTERVAL = 5000; // Auto-save every 5 seconds
