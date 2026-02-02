@@ -167,7 +167,6 @@ function parseHTML(html: string): { text: string; html: string } {
 
   // Load with cheerio
   const $ = loadHTML(decoded, {
-    decodeEntities: true,
     xmlMode: false,
   });
 

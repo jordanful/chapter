@@ -75,7 +75,7 @@ export const ttsRoutes: FastifyPluginAsync = async (app) => {
 
       const result = await kokoroService.generateSpeech({
         text: sampleText,
-        voiceId: body.voiceId,
+        voiceId: body.voiceId as any,
         settings: {
           speed: body.speed,
           temperature: body.temperature,
