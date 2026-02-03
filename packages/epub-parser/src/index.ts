@@ -143,7 +143,6 @@ function extractMetadata(meta: any): EPUBMetadata {
 function parseHTML(html: string): { text: string; html: string } {
   const decoded = decodeHTML(html);
 
-  // Load with cheerio
   const $ = loadHTML(decoded, {
     xmlMode: false,
   });
@@ -152,11 +151,55 @@ function parseHTML(html: string): { text: string; html: string } {
 
   const cleanHTML = $('body').html() || decoded;
 
-  const text = $('body')
-    .text()
-    .replace(/\s+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  // Convert HTML to text while preserving paragraph structure
+  let text = cleanHTML;
+
+  // Replace block-level closing tags with double newlines (paragraph boundaries)
+  const blockElements = [
+    'p',
+    'div',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'li',
+    'tr',
+    'section',
+    'article',
+    'aside',
+    'blockquote',
+    'pre',
+    'figure',
+    'figcaption',
+    'address',
+    'main',
+    'dt',
+    'dd',
+    'ul',
+    'ol',
+    'dl',
+    'table',
+  ];
+  const blockRegex = new RegExp(`</(${blockElements.join('|')})>`, 'gi');
+  text = text.replace(blockRegex, '\n\n');
+
+  // Replace <br> with single newline
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+
+  // Remove all remaining HTML tags
+  text = text.replace(/<[^>]+>/g, '');
+
+  // Decode any remaining HTML entities
+  text = decodeHTML(text);
+
+  // Normalize whitespace
+  text = text.replace(/[ \t]+/g, ' '); // Collapse horizontal spaces only
+  text = text.replace(/\n{3,}/g, '\n\n'); // Max 2 consecutive newlines
+  text = text.replace(/\n +\n/g, '\n\n'); // Clean up lines that are just spaces
+  text = text.replace(/^ +| +$/gm, ''); // Trim each line
+  text = text.trim();
 
   return { text, html: cleanHTML };
 }
