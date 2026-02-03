@@ -1,20 +1,13 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Menu } from '@base-ui/react/menu';
-import { Slider } from '@base-ui/react/slider';
-import { Tooltip } from '@base-ui/react/tooltip';
-import { Button } from '@/components/ui/button';
 import {
   Play,
   Pause,
   SkipForward,
   SkipBack,
-  Volume2,
-  VolumeX,
-  Volume1,
   Gauge,
-  Loader2,
   Check,
   ArrowLeft,
   Menu as MenuIcon,
@@ -70,8 +63,6 @@ export function AudioPlayer({
     initialTime,
   });
 
-  const [isDragging, setIsDragging] = useState(false);
-  const seekBarRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
@@ -89,11 +80,11 @@ export function AudioPlayer({
           break;
         case 'ArrowLeft':
           e.preventDefault();
-          controls.seek(Math.max(0, state.currentTime - 10));
+          controls.seekChapter(Math.max(0, state.chapterCurrentTime - 10));
           break;
         case 'ArrowRight':
           e.preventDefault();
-          controls.seek(Math.min(state.duration, state.currentTime + 10));
+          controls.seekChapter(Math.min(state.chapterDuration, state.chapterCurrentTime + 10));
           break;
         case 'ArrowUp':
           e.preventDefault();
@@ -108,7 +99,7 @@ export function AudioPlayer({
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [controls, state.currentTime, state.duration, state.volume]);
+  }, [controls, state.chapterCurrentTime, state.chapterDuration, state.volume]);
 
   // Auto-hide on scroll down, show on scroll up
   useEffect(() => {
@@ -153,40 +144,6 @@ export function AudioPlayer({
     return () => document.removeEventListener('touchstart', handleTouch);
   }, []);
 
-  // Seek bar drag handling
-  const handleSeekMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    handleSeekMove(e);
-  };
-
-  const handleSeekMove = (e: React.MouseEvent | MouseEvent) => {
-    if (!seekBarRef.current) return;
-
-    const rect = seekBarRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = Math.max(0, Math.min(1, x / rect.width));
-    const time = percentage * state.duration;
-
-    if (isDragging || e.type === 'mousedown') {
-      controls.seek(time);
-    }
-  };
-
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e: MouseEvent) => handleSeekMove(e);
-    const handleMouseUp = () => setIsDragging(false);
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging]);
-
   // Format time
   const formatTime = (seconds: number) => {
     if (!isFinite(seconds)) return '0:00';
@@ -195,16 +152,8 @@ export function AudioPlayer({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Calculate progress percentage
-  const progressPercentage = state.duration > 0 ? (state.currentTime / state.duration) * 100 : 0;
-
-  const bufferedPercentage = state.duration > 0 ? (state.buffered / state.duration) * 100 : 0;
-
   // Speed presets
   const speedPresets = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
-
-  // Volume icon based on level
-  const VolumeIcon = state.volume === 0 ? VolumeX : state.volume < 0.5 ? Volume1 : Volume2;
 
   return (
     <div
@@ -216,21 +165,6 @@ export function AudioPlayer({
       <div className="relative bg-gradient-to-b from-[hsl(var(--reader-bg))]/95 via-[hsl(var(--reader-bg))]/98 to-[hsl(var(--reader-bg))] backdrop-blur-2xl border-t border-[hsl(var(--reader-text))]/8">
         {/* Elegant top accent line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[hsl(var(--reader-accent))]/30 to-transparent" />
-
-        {/* Refined progress bar */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-[hsl(var(--reader-text))]/4">
-          <div
-            className="h-full bg-gradient-to-r from-[hsl(var(--reader-accent))]/80 to-[hsl(var(--reader-accent))] shadow-[0_0_8px_rgba(var(--reader-accent-rgb),0.3)] transition-all duration-500 ease-out"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-
-        {/* Hidden seek bar */}
-        <div
-          ref={seekBarRef}
-          className="absolute top-0 left-0 right-0 h-6 cursor-pointer z-10"
-          onMouseDown={handleSeekMouseDown}
-        />
 
         <div className="max-w-5xl mx-auto px-3 sm:px-6 py-3 sm:py-5">
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-8">
@@ -257,7 +191,7 @@ export function AudioPlayer({
             {/* Center: Audio playback controls */}
             <div className="flex items-center justify-center gap-1.5 sm:gap-3">
               <button
-                onClick={() => controls.seek(Math.max(0, state.currentTime - 15))}
+                onClick={() => controls.seekChapter(Math.max(0, state.chapterCurrentTime - 15))}
                 className="group flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
                 aria-label="Skip back 15 seconds"
               >
@@ -278,17 +212,21 @@ export function AudioPlayer({
               </button>
 
               <button
-                onClick={() => controls.seek(Math.min(state.duration, state.currentTime + 15))}
+                onClick={() =>
+                  controls.seekChapter(
+                    Math.min(state.chapterDuration, state.chapterCurrentTime + 15)
+                  )
+                }
                 className="group flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[hsl(var(--reader-text))]/5 hover:bg-[hsl(var(--reader-text))]/10 transition-all duration-300 hover:scale-105 active:scale-95"
                 aria-label="Skip forward 15 seconds"
               >
                 <SkipForward className="w-4 h-4 sm:w-5 sm:h-5 text-[hsl(var(--reader-text))]/60 group-hover:text-[hsl(var(--reader-text))] transition-colors duration-300" />
               </button>
 
-              {/* Time display */}
-              <div className="flex items-center justify-center min-w-[50px] sm:min-w-[60px] h-9 sm:h-11 px-2.5 sm:px-4 rounded-full bg-[hsl(var(--reader-text))]/5 border border-[hsl(var(--reader-text))]/8">
+              {/* Time display - shows elapsed time only (total unknown during streaming) */}
+              <div className="flex items-center justify-center min-w-[60px] sm:min-w-[70px] h-9 sm:h-11 px-2.5 sm:px-4 rounded-full bg-[hsl(var(--reader-text))]/5 border border-[hsl(var(--reader-text))]/8">
                 <span className="text-xs sm:text-sm font-semibold text-[hsl(var(--reader-text))]/70 tabular-nums">
-                  {formatTime(state.currentTime)}
+                  {formatTime(state.chapterCurrentTime)}
                 </span>
               </div>
             </div>

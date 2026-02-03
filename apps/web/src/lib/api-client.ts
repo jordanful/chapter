@@ -252,6 +252,22 @@ class APIClient {
     return response.blob();
   }
 
+  async getAudioCacheStats(): Promise<{
+    totalEntries: number;
+    totalSize: number;
+    totalSizeMB: number;
+    maxSize: number;
+    maxSizeMB: number;
+    utilizationPercent: number;
+    recentEntries: number;
+  }> {
+    return this.request('/tts/cache/stats');
+  }
+
+  async clearAudioCache(): Promise<{ success: boolean; message: string }> {
+    return this.request('/tts/cache', { method: 'DELETE' });
+  }
+
   async getUserSettings(): Promise<UserSettings> {
     return this.request<UserSettings>('/users/me/settings');
   }

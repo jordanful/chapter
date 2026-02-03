@@ -13,7 +13,6 @@ import { ReaderMode } from '@/components/reader/ModeToggle';
 import { ReadAlongView } from '@/components/reader/ReadAlongView';
 import { UnifiedControls } from '@/components/reader/unified-controls';
 import { readingToAudioPosition, audioToReadingPosition } from '@/lib/position-sync';
-import { getCurrentWord } from '@/lib/audio-text-sync';
 
 export default function ReaderPage() {
   const params = useParams();
@@ -41,18 +40,22 @@ export default function ReaderPage() {
   const chapterId = structure?.chapters[currentChapter]?.id;
   const { data: audioChunks, refetch: refetchChunks } = useAudioChunks(bookId, chapterId || '');
 
-  // Handle scroll progress updates
+  // Handle scroll progress updates (only in reading mode)
   const handleScrollProgress = useCallback(
     (percentage: number) => {
       setCurrentScrollProgress(percentage);
-      updateProgress({
-        chapterIndex: currentChapter,
-        chapterId: chapterId,
-        scrollPosition: percentage,
-        percentage: ((currentChapter + percentage / 100) / (structure?.chapters.length || 1)) * 100,
-      });
+      // Only save scroll progress in reading mode - listening mode uses audio position
+      if (mode === 'reading') {
+        updateProgress({
+          chapterIndex: currentChapter,
+          chapterId: chapterId,
+          scrollPosition: percentage,
+          percentage:
+            ((currentChapter + percentage / 100) / (structure?.chapters.length || 1)) * 100,
+        });
+      }
     },
-    [currentChapter, chapterId, structure, updateProgress]
+    [currentChapter, chapterId, structure, updateProgress, mode]
   );
 
   const handlePositionChange = useCallback(
@@ -119,6 +122,16 @@ export default function ReaderPage() {
     };
   }, [saveNow]);
 
+  // Update document title with book name
+  useEffect(() => {
+    if (book?.title) {
+      document.title = `${book.title} - Chapter`;
+    }
+    return () => {
+      document.title = 'Chapter';
+    };
+  }, [book?.title]);
+
   // Initialize currentAudioChunk when chunks become available
   useEffect(() => {
     if (mode === 'listening' && audioChunks && audioChunks.length > 0 && !currentAudioChunk) {
@@ -166,6 +179,32 @@ export default function ReaderPage() {
     tts.speed,
     tts.temperature,
   ]);
+
+  // Poll for new chunks while in listening mode (background generation)
+  useEffect(() => {
+    if (mode !== 'listening' || !chapterId) return;
+
+    let stableCount = 0;
+    let lastChunkCount = audioChunks?.length || 0;
+
+    const pollInterval = setInterval(() => {
+      refetchChunks().then(() => {
+        const currentCount = audioChunks?.length || 0;
+        if (currentCount === lastChunkCount) {
+          stableCount++;
+          // Stop polling after chunk count is stable for 3 cycles (9 seconds)
+          if (stableCount >= 3) {
+            clearInterval(pollInterval);
+          }
+        } else {
+          stableCount = 0;
+          lastChunkCount = currentCount;
+        }
+      });
+    }, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [mode, chapterId, refetchChunks, audioChunks?.length]);
 
   if (authLoading || bookLoading) {
     return (
@@ -295,60 +334,17 @@ export default function ReaderPage() {
           chapter={chapter}
           isLoading={chapterLoading}
           onScrollProgress={handleScrollProgress}
-          enableAutoScroll={mode === 'listening'}
-          currentWordIndex={
-            mode === 'listening' &&
-            audioChunks &&
-            audioChunks.length > 0 &&
-            currentAudioChunk &&
-            chapter
-              ? (() => {
-                  const result = getCurrentWord(
-                    chapter.paragraphs?.map((p: any) => p.text).join('\n\n') || '',
-                    currentAudioChunk,
-                    currentAudioTime,
-                    audioChunks.map((chunk: any) => ({
-                      id: chunk.id,
-                      startPosition: chunk.startPosition,
-                      endPosition: chunk.endPosition,
-                      audioDuration: chunk.audioDuration,
-                    }))
-                  );
-
-                  // Convert global character position to chapter-relative
-                  const chapterStartPosition = chapter.startPosition || 0;
-                  const chapterRelativeCharPosition = Math.max(
-                    0,
-                    result.charPosition - chapterStartPosition
-                  );
-
-                  // Calculate word index from chapter-relative position
-                  const chapterText =
-                    chapter.paragraphs?.map((p: any) => p.text).join('\n\n') || '';
-                  const words = chapterText.split(/(\s+)/);
-                  let currentPos = 0;
-                  let wordIndex = 0;
-                  for (let i = 0; i < words.length; i++) {
-                    const wordLength = words[i].length;
-                    if (currentPos + wordLength > chapterRelativeCharPosition) {
-                      wordIndex = i;
-                      break;
-                    }
-                    currentPos += wordLength;
-                  }
-
-                  return wordIndex;
-                })()
-              : null
-          }
         />
       </div>
 
       {/* In-place loading overlay for audio generation */}
       {isGenerating && (
         <div className="fixed inset-0 z-40 pointer-events-none">
+          {/* Dim backdrop */}
+          <div className="absolute inset-0 bg-[hsl(var(--reader-bg))]/60 backdrop-blur-[2px] transition-opacity duration-300" />
+          {/* Chiclet */}
           <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-auto">
-            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-[hsl(var(--reader-bg))]/95 backdrop-blur-xl border border-[hsl(var(--reader-text))]/10 shadow-2xl">
+            <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-[hsl(var(--reader-bg))] backdrop-blur-xl border border-[hsl(var(--reader-text))]/10 shadow-2xl">
               <div className="w-5 h-5 border-2 border-[hsl(var(--reader-accent))]/20 border-t-[hsl(var(--reader-accent))] rounded-full animate-spin" />
               <div className="flex flex-col">
                 <p className="text-sm font-semibold text-[hsl(var(--reader-text))]">
@@ -379,7 +375,7 @@ export default function ReaderPage() {
           mode={mode}
           onModeChange={handleModeChange}
         />
-      ) : audioChunks && audioChunks.length > 0 ? (
+      ) : audioChunks && audioChunks.length > 0 && !isGenerating ? (
         <AudioPlayer
           bookId={bookId}
           chapterId={chapterId || ''}

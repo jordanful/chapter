@@ -5,24 +5,13 @@ import { fixEncodingIssues } from '@/lib/text-cleanup';
 
 interface ReadAlongViewProps {
   chapter: any;
-  currentWordIndex?: number | null; // null or undefined = no highlighting
   isLoading: boolean;
   onScrollProgress?: (percentage: number) => void;
-  enableAutoScroll?: boolean; // Auto-scroll to highlighted word
 }
 
-export function ReadAlongView({
-  chapter,
-  currentWordIndex = null,
-  isLoading,
-  onScrollProgress,
-  enableAutoScroll = false,
-}: ReadAlongViewProps) {
+export function ReadAlongView({ chapter, isLoading, onScrollProgress }: ReadAlongViewProps) {
   const contentRef = useRef<HTMLDivElement>(null);
-  const highlightedWordRef = useRef<HTMLSpanElement>(null);
   const [isVisible, setIsVisible] = useState(false);
-
-  const isHighlighting = currentWordIndex !== null && currentWordIndex !== undefined;
 
   const handleScroll = useCallback(() => {
     if (!onScrollProgress) return;
@@ -44,28 +33,6 @@ export function ReadAlongView({
       return () => clearTimeout(timer);
     }
   }, [chapter, isLoading]);
-
-  useEffect(() => {
-    if (!enableAutoScroll || !highlightedWordRef.current) return;
-
-    const element = highlightedWordRef.current;
-    const rect = element.getBoundingClientRect();
-    const audioPlayerHeight = 140;
-    const topPadding = 100;
-
-    const visibleTop = topPadding;
-    const visibleBottom = window.innerHeight - audioPlayerHeight;
-
-    if (rect.top < visibleTop || rect.bottom > visibleBottom) {
-      const safeAreaCenter = visibleTop + (visibleBottom - visibleTop) / 2;
-      const scrollTarget = window.scrollY + rect.top - safeAreaCenter;
-
-      window.scrollTo({
-        top: Math.max(0, scrollTarget),
-        behavior: 'smooth',
-      });
-    }
-  }, [currentWordIndex, enableAutoScroll]);
 
   if (isLoading) {
     return (
@@ -129,14 +96,6 @@ export function ReadAlongView({
         <div className="space-y-6">
           {chapter.paragraphs?.map((paragraph: any, pIndex: number) => {
             const cleanedText = fixEncodingIssues(paragraph.text);
-            const words = cleanedText.split(/(\s+)/);
-
-            const paragraphStartIndex = chapter.paragraphs
-              .slice(0, pIndex)
-              .reduce((sum: number, p: any, idx: number) => {
-                const pWords = p.text.split(/(\s+)/).length;
-                return sum + pWords + 1;
-              }, 0);
 
             return (
               <p
@@ -149,40 +108,7 @@ export function ReadAlongView({
                 }}
                 lang="en"
               >
-                {words.map((word: string, wIndex: number) => {
-                  const globalWordIndex = paragraphStartIndex + wIndex;
-                  const isWordHighlighted = isHighlighting && globalWordIndex === currentWordIndex;
-                  const isWhitespace = /^\s+$/.test(word);
-
-                  if (isWhitespace) {
-                    return <span key={wIndex}>{word}</span>;
-                  }
-
-                  return (
-                    <span
-                      key={wIndex}
-                      ref={isWordHighlighted ? highlightedWordRef : null}
-                      className={
-                        isWordHighlighted
-                          ? 'text-[hsl(var(--reader-accent))] relative inline-block'
-                          : ''
-                      }
-                      style={
-                        isWordHighlighted
-                          ? {
-                              textShadow: '0 0 12px hsla(var(--reader-accent-rgb), 0.3)',
-                              background:
-                                'linear-gradient(to bottom, transparent 0%, hsla(var(--reader-accent-rgb), 0.15) 0%, hsla(var(--reader-accent-rgb), 0.15) 100%, transparent 100%)',
-                              backgroundSize: '100% 100%',
-                              borderRadius: '2px',
-                            }
-                          : undefined
-                      }
-                    >
-                      {word}
-                    </span>
-                  );
-                })}
+                {cleanedText}
               </p>
             );
           })}

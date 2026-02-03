@@ -195,35 +195,46 @@ export class AudioCacheService {
       return results;
     }
 
-    const firstChunk = chunks[0];
-    const firstAudio = await this.getOrGenerateAudio({
-      text: firstChunk.text,
-      voiceId,
-      settings,
-      bookId,
-      chapterId,
-      startPosition: firstChunk.startPosition,
-      endPosition: firstChunk.endPosition,
-    });
-    results.push(firstAudio);
+    // Generate first few chunks upfront to provide a buffer for playback
+    const INITIAL_CHUNKS = Math.min(3, chunks.length);
 
-    setImmediate(async () => {
-      for (let i = 1; i < chunks.length; i++) {
-        try {
-          await this.getOrGenerateAudio({
-            text: chunks[i].text,
-            voiceId,
-            settings,
-            bookId,
-            chapterId,
-            startPosition: chunks[i].startPosition,
-            endPosition: chunks[i].endPosition,
-          });
-        } catch (error) {
-          console.error(`Background generation failed for chunk ${i}:`, error);
-        }
+    for (let i = 0; i < INITIAL_CHUNKS; i++) {
+      try {
+        const audio = await this.getOrGenerateAudio({
+          text: chunks[i].text,
+          voiceId,
+          settings,
+          bookId,
+          chapterId,
+          startPosition: chunks[i].startPosition,
+          endPosition: chunks[i].endPosition,
+        });
+        results.push(audio);
+      } catch (error) {
+        console.error(`Generation failed for chunk ${i}:`, error);
       }
-    });
+    }
+
+    // Generate remaining chunks in background
+    if (chunks.length > INITIAL_CHUNKS) {
+      setImmediate(async () => {
+        for (let i = INITIAL_CHUNKS; i < chunks.length; i++) {
+          try {
+            await this.getOrGenerateAudio({
+              text: chunks[i].text,
+              voiceId,
+              settings,
+              bookId,
+              chapterId,
+              startPosition: chunks[i].startPosition,
+              endPosition: chunks[i].endPosition,
+            });
+          } catch (error) {
+            console.error(`Background generation failed for chunk ${i}:`, error);
+          }
+        }
+      });
+    }
 
     return results;
   }

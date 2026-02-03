@@ -315,4 +315,15 @@ export const ttsRoutes: FastifyPluginAsync = async (app) => {
       }
     }
   );
+
+  // Clear the audio cache
+  app.delete('/cache', async (request, reply) => {
+    try {
+      await audioCacheService.clearCache();
+      return reply.send({ success: true, message: 'Audio cache cleared' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to clear cache';
+      return reply.code(500).send({ error: message });
+    }
+  });
 };
