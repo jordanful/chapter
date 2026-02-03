@@ -115,7 +115,7 @@ export class EPUBParser {
         (item) =>
           item.$.id === 'cover' ||
           item.$.id === 'cover-image' ||
-          item.$['media-type'].startsWith('image/') && item.$.href.includes('cover')
+          (item.$['media-type'].startsWith('image/') && item.$.href.includes('cover'))
       );
 
       if (coverItem) {
@@ -184,8 +184,44 @@ export class EPUBParser {
     let text = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
     text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
 
-    // Replace block-level elements with newlines
-    text = text.replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n');
+    // Replace block-level elements with double newlines (paragraph boundaries)
+    // This list covers all HTML5 block-level elements commonly used in EPUBs
+    const blockElements = [
+      'p',
+      'div',
+      'h[1-6]',
+      'li',
+      'tr',
+      'td',
+      'th',
+      'section',
+      'article',
+      'aside',
+      'blockquote',
+      'pre',
+      'figure',
+      'figcaption',
+      'details',
+      'summary',
+      'address',
+      'main',
+      'nav',
+      'header',
+      'footer',
+      'dt',
+      'dd',
+      'ul',
+      'ol',
+      'dl',
+      'table',
+      'thead',
+      'tbody',
+      'tfoot',
+    ];
+    const blockRegex = new RegExp(`</(${blockElements.join('|')})>`, 'gi');
+    text = text.replace(blockRegex, '\n\n');
+
+    // Replace <br> with single newline (soft break within paragraph)
     text = text.replace(/<br\s*\/?>/gi, '\n');
 
     // Remove all other HTML tags
@@ -196,7 +232,10 @@ export class EPUBParser {
 
     // Normalize whitespace
     text = text.replace(/\n{3,}/g, '\n\n'); // Max 2 consecutive newlines
-    text = text.replace(/[ \t]+/g, ' '); // Collapse spaces
+    text = text.replace(/[ \t]+/g, ' '); // Collapse horizontal spaces
+    // Clean up lines that are just spaces
+    text = text.replace(/\n +\n/g, '\n\n');
+    text = text.replace(/^ +| +$/gm, ''); // Trim each line
     text = text.trim();
 
     return text;

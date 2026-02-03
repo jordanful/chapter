@@ -44,7 +44,13 @@ export function ReaderView({
 
   // Restore scroll position when chapter loads with saved position
   useEffect(() => {
-    if (initialScrollPosition && chapter && initialScrollPosition > 0 && !hasRestoredScroll.current && !isLoading) {
+    if (
+      initialScrollPosition &&
+      chapter &&
+      initialScrollPosition > 0 &&
+      !hasRestoredScroll.current &&
+      !isLoading
+    ) {
       // Mark as restored immediately to prevent multiple restoration attempts
       hasRestoredScroll.current = true;
 
@@ -65,10 +71,7 @@ export function ReaderView({
       };
 
       // Try restoring with delays
-      restoreTimeouts.current = [
-        setTimeout(restoreScroll, 100),
-        setTimeout(restoreScroll, 300),
-      ];
+      restoreTimeouts.current = [setTimeout(restoreScroll, 100), setTimeout(restoreScroll, 300)];
     }
 
     return () => {
@@ -108,9 +111,25 @@ export function ReaderView({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <svg className="animate-spin h-6 w-6 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        <svg
+          className="animate-spin h-6 w-6 text-muted-foreground"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
         </svg>
       </div>
     );
@@ -157,7 +176,7 @@ export function ReaderView({
           {chapter.paragraphs?.map((paragraph: any, index: number) => (
             <p
               key={index}
-              className={`hyphenate text-[hsl(var(--reader-text))] animate-fade-in-stagger ${
+              className={`hyphenate text-[hsl(var(--reader-text))] animate-fade-in-stagger whitespace-pre-line ${
                 index === 0 && chapter.title ? 'drop-cap mt-8' : ''
               }`}
               style={{
@@ -171,7 +190,10 @@ export function ReaderView({
         </div>
 
         {/* End of chapter ornament */}
-        <div className="flex items-center justify-center mt-16 mb-8 animate-fade-in" style={{ animationDelay: '600ms' }}>
+        <div
+          className="flex items-center justify-center mt-16 mb-8 animate-fade-in"
+          style={{ animationDelay: '600ms' }}
+        >
           <div className="h-px w-24 bg-gradient-to-r from-transparent via-foreground/20 to-transparent" />
         </div>
       </article>

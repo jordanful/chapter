@@ -103,8 +103,9 @@ export class EPUBProcessor {
     chapterText: string,
     chapterStartPosition: number
   ): Promise<void> {
-    // Split into paragraphs (by double newline or single newline)
-    const paragraphs = chapterText.split(/\n+/).filter((p) => p.trim().length > 0);
+    // Split into paragraphs on double newlines (paragraph boundaries)
+    // Single newlines (from <br> tags) are kept within paragraphs
+    const paragraphs = chapterText.split(/\n\n+/).filter((p) => p.trim().length > 0);
 
     let paragraphStartInChapter = 0;
 
