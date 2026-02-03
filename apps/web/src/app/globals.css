@@ -362,8 +362,10 @@
 
 /* Skeuomorphic Bookshelf Styles */
 .bookshelf-container {
+  --book-scale: 1;
   min-height: 100vh;
   padding-top: 1rem;
+  padding-bottom: 5rem; /* Space for floating scale slider */
 }
 
 .shelf {
@@ -375,17 +377,22 @@
 
 .shelf-books {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: repeat(var(--books-per-shelf), 1fr);
+  gap: calc(1.5rem * var(--book-scale));
   align-items: end;
-  padding: 1.5rem 1rem 0 1rem;
-  min-height: 220px;
+  padding: calc(2.5rem * var(--book-scale)) 1rem 0 1rem;
+  min-height: calc(260px * var(--book-scale));
+  transition: min-height 0.15s ease-out, gap 0.15s ease-out, padding 0.15s ease-out;
 }
 
 .shelf-book {
   width: 100%;
-  max-width: 180px;
+  max-width: 160px;
   justify-self: center;
+  transform: scale(var(--book-scale));
+  transform-origin: bottom center;
+  transition: transform 0.1s ease-out;
+  will-change: transform;
 }
 
 /* Shelf board - the wooden plank (darker) */
@@ -444,38 +451,19 @@
 }
 
 /* Responsive shelf adjustments */
-@media (max-width: 1280px) {
-  .shelf-books {
-    grid-template-columns: repeat(5, 1fr);
-    min-height: 200px;
-  }
-}
-
-@media (max-width: 1024px) {
-  .shelf-books {
-    grid-template-columns: repeat(4, 1fr);
-    min-height: 180px;
-    gap: 1.25rem;
-  }
-}
-
 @media (max-width: 768px) {
   .shelf {
     padding: 0 1rem;
   }
   .shelf-books {
-    grid-template-columns: repeat(3, 1fr);
     padding: 1rem 0.5rem 0 0.5rem;
     gap: 1rem;
-    min-height: 160px;
   }
 }
 
 @media (max-width: 480px) {
   .shelf-books {
-    grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
-    min-height: 140px;
   }
   .shelf-book {
     max-width: 150px;

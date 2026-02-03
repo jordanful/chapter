@@ -5,41 +5,68 @@ import { useWindowVirtualizer } from '@tanstack/react-virtual';
 
 interface BookshelfProps {
   children: ReactNode;
+  scale?: number;
 }
 
-// Returns books per shelf based on screen width (matches CSS grid breakpoints)
-function useBooksPerShelf() {
+// Returns books per shelf based on screen width and scale
+// Only changes at discrete thresholds for smooth visual experience
+function useBooksPerShelf(scale: number) {
   const [booksPerShelf, setBooksPerShelf] = useState(6);
 
   useEffect(() => {
-    function updateBooksPerShelf() {
+    function calculateBooks() {
       const width = window.innerWidth;
+
+      // Base books per shelf at different breakpoints (at scale 1.0)
+      let baseBooks: number;
       if (width <= 480) {
-        setBooksPerShelf(2);
+        baseBooks = 2;
       } else if (width <= 768) {
-        setBooksPerShelf(3);
+        baseBooks = 3;
       } else if (width <= 1024) {
-        setBooksPerShelf(4);
-      } else if (width <= 1280) {
-        setBooksPerShelf(5);
+        baseBooks = 4;
+      } else if (width <= 1400) {
+        baseBooks = 5;
       } else {
-        setBooksPerShelf(6);
+        baseBooks = 6;
       }
+
+      // Only change columns at discrete scale thresholds (0.7, 0.85, 1.0, 1.1, 1.2)
+      // This prevents jitter from continuous scale changes
+      let columnMultiplier: number;
+      if (scale <= 0.75) {
+        columnMultiplier = 1.4; // More columns when small
+      } else if (scale <= 0.9) {
+        columnMultiplier = 1.2;
+      } else if (scale <= 1.05) {
+        columnMultiplier = 1.0; // Base columns
+      } else {
+        columnMultiplier = 0.8; // Fewer columns when large
+      }
+
+      const adjustedBooks = Math.round(baseBooks * columnMultiplier);
+      return Math.max(2, Math.min(10, adjustedBooks));
     }
 
-    updateBooksPerShelf();
-    window.addEventListener('resize', updateBooksPerShelf);
-    return () => window.removeEventListener('resize', updateBooksPerShelf);
-  }, []);
+    setBooksPerShelf(calculateBooks());
+
+    function handleResize() {
+      setBooksPerShelf(calculateBooks());
+    }
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [scale]);
 
   return booksPerShelf;
 }
 
-// Estimated shelf height for virtualization (book + shelf board)
-const SHELF_HEIGHT = 280;
+// Base shelf height for virtualization (book + shelf board + padding)
+const BASE_SHELF_HEIGHT = 320;
 
-export function Bookshelf({ children }: BookshelfProps) {
-  const booksPerShelf = useBooksPerShelf();
+export function Bookshelf({ children, scale = 1 }: BookshelfProps) {
+  const shelfHeight = BASE_SHELF_HEIGHT * scale;
+  const booksPerShelf = useBooksPerShelf(scale);
   const listRef = useRef<HTMLDivElement>(null);
 
   const shelves = useMemo(() => {
@@ -62,7 +89,7 @@ export function Bookshelf({ children }: BookshelfProps) {
 
   const virtualizer = useWindowVirtualizer({
     count: shelves.length,
-    estimateSize: () => SHELF_HEIGHT,
+    estimateSize: () => shelfHeight,
     overscan: 2, // Render 2 extra shelves above/below viewport for smooth scrolling
     scrollMargin: listRef.current?.offsetTop ?? 0,
   });
@@ -70,7 +97,14 @@ export function Bookshelf({ children }: BookshelfProps) {
   const virtualItems = virtualizer.getVirtualItems();
 
   return (
-    <div ref={listRef} className="bookshelf-container">
+    <div
+      ref={listRef}
+      className="bookshelf-container"
+      style={{
+        ['--book-scale' as string]: scale,
+        ['--books-per-shelf' as string]: booksPerShelf,
+      }}
+    >
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,

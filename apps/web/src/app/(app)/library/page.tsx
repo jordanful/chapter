@@ -9,6 +9,7 @@ import { UploadingBookCard } from '@/components/library/uploading-book-card';
 import { UploadButton } from '@/components/library/upload-button';
 import { Bookshelf } from '@/components/library/bookshelf';
 import { Select } from '@base-ui/react/select';
+import { Slider } from '@base-ui/react/slider';
 import { Settings, Search, X, ChevronDown, Check, Star } from 'lucide-react';
 
 // Smart search that matches title, author, and handles common variations
@@ -69,11 +70,25 @@ export default function LibraryPage() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
+  const [bookScale, setBookScale] = useState(1);
+
+  // Load book scale from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('library_book_scale');
+    if (saved) {
+      setBookScale(parseFloat(saved));
+    }
+  }, []);
 
   // Persist sort preference
   useEffect(() => {
     localStorage.setItem('library_sort', sortBy);
   }, [sortBy]);
+
+  // Persist book scale preference
+  useEffect(() => {
+    localStorage.setItem('library_book_scale', bookScale.toString());
+  }, [bookScale]);
 
   // Filter and sort books
   const filteredBooks = useMemo(() => {
@@ -216,7 +231,10 @@ export default function LibraryPage() {
   return (
     <div
       className="min-h-screen relative"
-      style={{ background: 'url(/wood.png) repeat' }}
+      style={{
+        background: 'url(/wood.png) repeat',
+        ['--book-scale' as string]: bookScale,
+      }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -273,7 +291,7 @@ export default function LibraryPage() {
                   value={sortBy}
                   onValueChange={(value) => value && setSortBy(value as any)}
                 >
-                  <Select.Trigger className="flex items-center gap-2 h-11 px-4 rounded-full bg-white/5 hover:bg-white/10 text-white/90 text-sm transition-all duration-300 cursor-pointer shrink-0 border border-white/0 hover:border-white/10">
+                  <Select.Trigger className="flex items-center gap-2 h-11 px-4 rounded-full bg-white/5 hover:bg-white/10 text-white/90 text-sm transition-all duration-300 cursor-pointer shrink-0 border border-white/0 hover:border-white/10 capitalize">
                     <Select.Value />
                     <Select.Icon>
                       <ChevronDown className="w-4 h-4 text-white/50" />
@@ -344,7 +362,7 @@ export default function LibraryPage() {
         ) : allItems.length === 0 && !booksLoading ? (
           <div className="relative">
             {/* Empty shelves */}
-            <Bookshelf>{[]}</Bookshelf>
+            <Bookshelf scale={bookScale}>{[]}</Bookshelf>
 
             {/* Floating prompt */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -355,7 +373,7 @@ export default function LibraryPage() {
             </div>
           </div>
         ) : allItems.length === 0 && booksLoading ? (
-          <Bookshelf>{[]}</Bookshelf>
+          <Bookshelf scale={bookScale}>{[]}</Bookshelf>
         ) : (
           <>
             {/* Search results indicator */}
@@ -367,10 +385,44 @@ export default function LibraryPage() {
                 </p>
               </div>
             )}
-            <Bookshelf>{allItems}</Bookshelf>
+            <Bookshelf scale={bookScale}>{allItems}</Bookshelf>
           </>
         )}
       </main>
+
+      {/* Floating scale slider - Mac OS X style */}
+      {books.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
+          <div className="flex items-center gap-3 px-4 py-2.5 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl">
+            <svg className="w-3.5 h-3.5 text-white/50" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="3" y="3" width="7" height="10" rx="1" />
+            </svg>
+            <Slider.Root
+              value={bookScale}
+              onValueChange={(value) => {
+                const num = Array.isArray(value) ? value[0] : value;
+                if (typeof num === 'number' && !isNaN(num)) {
+                  setBookScale(num);
+                }
+              }}
+              min={0.7}
+              max={1.2}
+              step={0.05}
+              className="relative flex items-center w-32 h-5 touch-none select-none"
+            >
+              <Slider.Control className="flex items-center w-full">
+                <Slider.Track className="relative h-1 w-full rounded-full bg-white/20">
+                  <Slider.Indicator className="absolute h-full rounded-full bg-white/50" />
+                  <Slider.Thumb className="block w-4 h-4 rounded-full bg-white shadow-lg shadow-black/30 hover:bg-white focus:outline-none focus:ring-2 focus:ring-white/50 transition-transform hover:scale-110 active:scale-95 cursor-grab active:cursor-grabbing" />
+                </Slider.Track>
+              </Slider.Control>
+            </Slider.Root>
+            <svg className="w-5 h-5 text-white/50" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="2" y="2" width="9" height="13" rx="1" />
+            </svg>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
