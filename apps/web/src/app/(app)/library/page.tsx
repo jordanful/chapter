@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useBooks } from '@/lib/hooks/use-books';
@@ -11,6 +11,62 @@ import { Bookshelf } from '@/components/library/bookshelf';
 import { Select } from '@base-ui/react/select';
 import { Slider } from '@base-ui/react/slider';
 import { Settings, Search, X, ChevronDown, Check, Star } from 'lucide-react';
+
+// Scale slider component with smooth visual updates
+function BookScaleSlider({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const [isActive, setIsActive] = useState(false);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const handlePointerUp = () => setIsActive(false);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => window.removeEventListener('pointerup', handlePointerUp);
+  }, [isActive]);
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl">
+      <svg className="w-3.5 h-3.5 text-white/50" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="8.5" y="7" width="7" height="10" rx="1" />
+      </svg>
+      <Slider.Root
+        value={value}
+        onValueChange={(val) => {
+          const num = Array.isArray(val) ? val[0] : val;
+          if (typeof num === 'number' && !isNaN(num)) {
+            onChange(num);
+          }
+        }}
+        min={0.7}
+        max={1.2}
+        step={0.05}
+        className="relative flex items-center w-32 h-5 touch-none select-none"
+      >
+        <Slider.Control
+          className="group/slider flex items-center w-full py-2 -my-2 cursor-pointer"
+          onPointerDown={() => setIsActive(true)}
+        >
+          <Slider.Track className="relative h-1 w-full rounded-full bg-white/20">
+            <Slider.Indicator className="absolute h-full rounded-full bg-white/50" />
+            <Slider.Thumb
+              className={`block w-4 h-4 rounded-full bg-white shadow-lg shadow-black/30 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all duration-150 ease-out cursor-grab active:cursor-grabbing ${
+                isActive ? 'scale-150' : 'group-hover/slider:scale-150'
+              }`}
+            />
+          </Slider.Track>
+        </Slider.Control>
+      </Slider.Root>
+      <svg className="w-5 h-5 text-white/50" viewBox="0 0 24 24" fill="currentColor">
+        <rect x="7.5" y="5.5" width="9" height="13" rx="1" />
+      </svg>
+    </div>
+  );
+}
 
 // Smart search that matches title, author, and handles common variations
 function smartMatch(book: any, query: string): boolean {
@@ -71,6 +127,8 @@ export default function LibraryPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
   const [bookScale, setBookScale] = useState(1);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const lastScrollY = useRef(0);
 
   // Load book scale from localStorage on mount
   useEffect(() => {
@@ -89,6 +147,39 @@ export default function LibraryPage() {
   useEffect(() => {
     localStorage.setItem('library_book_scale', bookScale.toString());
   }, [bookScale]);
+
+  // Auto-hide header on scroll down, show on scroll up
+  useEffect(() => {
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+
+          // Always show if near top
+          if (currentScrollY < 50) {
+            setIsHeaderVisible(true);
+          }
+          // Show when scrolling up
+          else if (currentScrollY < lastScrollY.current - 5) {
+            setIsHeaderVisible(true);
+          }
+          // Hide when scrolling down
+          else if (currentScrollY > lastScrollY.current + 5 && currentScrollY > 100) {
+            setIsHeaderVisible(false);
+          }
+
+          lastScrollY.current = currentScrollY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Filter and sort books
   const filteredBooks = useMemo(() => {
@@ -250,8 +341,12 @@ export default function LibraryPage() {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-gradient-to-b from-black/60 via-black/40 to-transparent backdrop-blur-xl border-b border-white/5">
-        <div className="container mx-auto px-6 py-4">
+      <header
+        className={`fixed top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/60 via-black/40 to-transparent backdrop-blur-xl border-b border-white/5 transition-all duration-300 ease-out ${
+          isHeaderVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+        }`}
+      >
+        <div className="max-w-[1400px] mx-auto px-[1.5rem] md:px-[3rem] py-4">
           <div className="flex items-center justify-between gap-4">
             {/* Search and sort */}
             {books.length > 0 && (
@@ -344,7 +439,7 @@ export default function LibraryPage() {
       </header>
 
       {/* Main Content */}
-      <main>
+      <main className="pt-20" style={{ ['--book-scale' as string]: bookScale }}>
         {allItems.length === 0 && searchQuery ? (
           <div className="flex flex-col items-center justify-center py-24 text-center px-4">
             <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-8 max-w-md">
@@ -392,35 +487,12 @@ export default function LibraryPage() {
 
       {/* Floating scale slider - Mac OS X style */}
       {books.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30">
-          <div className="flex items-center gap-3 px-4 py-2.5 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl">
-            <svg className="w-3.5 h-3.5 text-white/50" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="3" y="3" width="7" height="10" rx="1" />
-            </svg>
-            <Slider.Root
-              value={bookScale}
-              onValueChange={(value) => {
-                const num = Array.isArray(value) ? value[0] : value;
-                if (typeof num === 'number' && !isNaN(num)) {
-                  setBookScale(num);
-                }
-              }}
-              min={0.7}
-              max={1.2}
-              step={0.05}
-              className="relative flex items-center w-32 h-5 touch-none select-none"
-            >
-              <Slider.Control className="flex items-center w-full">
-                <Slider.Track className="relative h-1 w-full rounded-full bg-white/20">
-                  <Slider.Indicator className="absolute h-full rounded-full bg-white/50" />
-                  <Slider.Thumb className="block w-4 h-4 rounded-full bg-white shadow-lg shadow-black/30 hover:bg-white focus:outline-none focus:ring-2 focus:ring-white/50 transition-transform hover:scale-110 active:scale-95 cursor-grab active:cursor-grabbing" />
-                </Slider.Track>
-              </Slider.Control>
-            </Slider.Root>
-            <svg className="w-5 h-5 text-white/50" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="2" y="2" width="9" height="13" rx="1" />
-            </svg>
-          </div>
+        <div
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 ease-out ${
+            isHeaderVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'
+          }`}
+        >
+          <BookScaleSlider value={bookScale} onChange={setBookScale} />
         </div>
       )}
     </div>

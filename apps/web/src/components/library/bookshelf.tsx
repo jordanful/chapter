@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useMemo, Children, useState, useEffect, useRef } from 'react';
+import { ReactNode, useMemo, Children, useState, useEffect, useRef, memo } from 'react';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 
 interface BookshelfProps {
@@ -31,17 +31,16 @@ function useBooksPerShelf(scale: number) {
         baseBooks = 6;
       }
 
-      // Only change columns at discrete scale thresholds (0.7, 0.85, 1.0, 1.1, 1.2)
-      // This prevents jitter from continuous scale changes
+      // Only change columns at discrete scale thresholds
       let columnMultiplier: number;
       if (scale <= 0.75) {
-        columnMultiplier = 1.4; // More columns when small
+        columnMultiplier = 1.4;
       } else if (scale <= 0.9) {
         columnMultiplier = 1.2;
       } else if (scale <= 1.05) {
-        columnMultiplier = 1.0; // Base columns
+        columnMultiplier = 1.0;
       } else {
-        columnMultiplier = 0.8; // Fewer columns when large
+        columnMultiplier = 0.8;
       }
 
       const adjustedBooks = Math.round(baseBooks * columnMultiplier);
@@ -64,7 +63,7 @@ function useBooksPerShelf(scale: number) {
 // Base shelf height for virtualization (book + shelf board + padding)
 const BASE_SHELF_HEIGHT = 320;
 
-export function Bookshelf({ children, scale = 1 }: BookshelfProps) {
+export const Bookshelf = memo(function Bookshelf({ children, scale = 1 }: BookshelfProps) {
   const shelfHeight = BASE_SHELF_HEIGHT * scale;
   const booksPerShelf = useBooksPerShelf(scale);
   const listRef = useRef<HTMLDivElement>(null);
@@ -101,7 +100,6 @@ export function Bookshelf({ children, scale = 1 }: BookshelfProps) {
       ref={listRef}
       className="bookshelf-container"
       style={{
-        ['--book-scale' as string]: scale,
         ['--books-per-shelf' as string]: booksPerShelf,
       }}
     >
@@ -144,4 +142,4 @@ export function Bookshelf({ children, scale = 1 }: BookshelfProps) {
       </div>
     </div>
   );
-}
+});

@@ -104,96 +104,215 @@ export default function SettingsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: 'url(/wood.png) repeat' }}>
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <h1 className="text-lg font-semibold">Settings</h1>
+      <header className="sticky top-0 z-10 bg-gradient-to-b from-black/60 via-black/40 to-transparent backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-[1400px] mx-auto px-[1.5rem] md:px-[3rem] py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.back()}
+                className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 transition-all duration-300 hover:scale-105 active:scale-95"
+              >
+                <ArrowLeft className="w-[18px] h-[18px]" />
+              </button>
+              <h1 className="text-lg font-semibold text-white/90">Settings</h1>
+            </div>
+            <button
+              onClick={logout}
+              className="h-10 px-5 rounded-full bg-white/5 hover:bg-white/10 text-white/90 text-sm font-medium transition-all duration-300 hover:scale-105 active:scale-95"
+            >
+              Sign out
+            </button>
           </div>
-          <Button variant="ghost" size="sm" onClick={logout}>
-            Sign out
-          </Button>
         </div>
       </header>
 
       {/* Content */}
-      <main className="container mx-auto px-4 py-6 max-w-2xl">
-        {/* Account Section */}
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">Account</h2>
-          <div className="bg-muted/50 rounded-xl p-4">
-            <div className="space-y-2">
-              <div>
-                <p className="text-sm text-muted-foreground">Email</p>
-                <p className="font-medium">{user?.email}</p>
-              </div>
-              {user?.name && (
+      <main className="max-w-2xl mx-auto px-4 py-6">
+        <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          {/* Account Section */}
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold mb-4">Account</h2>
+            <div className="bg-muted/50 rounded-xl p-4">
+              <div className="space-y-2">
                 <div>
-                  <p className="text-sm text-muted-foreground">Name</p>
-                  <p className="font-medium">{user.name}</p>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium">{user?.email}</p>
                 </div>
-              )}
+                {user?.name && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="font-medium">{user.name}</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Library Section */}
-        <section className="mb-8">
-          <LibraryFolders />
-        </section>
+          {/* Library Section */}
+          <section className="mb-8">
+            <LibraryFolders />
+          </section>
 
-        {/* TTS Section */}
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">Text-to-Speech</h2>
+          {/* TTS Section */}
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold mb-4">Text-to-Speech</h2>
 
-          {/* TTS Health */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 text-sm">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  isHealthy ? 'bg-green-500' : 'bg-red-500'
-                }`}
-              />
-              <span className="text-muted-foreground">
-                Kokoro TTS: {isHealthy ? 'Online' : 'Offline'}
-              </span>
+            {/* TTS Health */}
+            <div className="mb-4">
+              <div className="flex items-center gap-2 text-sm">
+                <div
+                  className={`w-2 h-2 rounded-full ${isHealthy ? 'bg-green-500' : 'bg-red-500'}`}
+                />
+                <span className="text-muted-foreground">
+                  Kokoro TTS: {isHealthy ? 'Online' : 'Offline'}
+                </span>
+              </div>
             </div>
-          </div>
 
-          {/* Voice Selection */}
-          <div className="space-y-6">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Voice</label>
-              {voicesLoading ? (
-                <p className="text-sm text-muted-foreground">Loading voices...</p>
-              ) : (
+            {/* Voice Selection */}
+            <div className="space-y-6">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Voice</label>
+                {voicesLoading ? (
+                  <p className="text-sm text-muted-foreground">Loading voices...</p>
+                ) : (
+                  <Select.Root
+                    value={tts.voiceId}
+                    onValueChange={(value) => value && setTTSSettings({ voiceId: value })}
+                  >
+                    <Select.Trigger className="flex items-center justify-between w-full h-11 px-4 rounded-xl border border-input bg-background hover:bg-accent/50 transition-colors">
+                      <Select.Value placeholder="Select a voice" />
+                      <Select.Icon>
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      </Select.Icon>
+                    </Select.Trigger>
+                    <Select.Portal>
+                      <Select.Positioner sideOffset={4}>
+                        <Select.Popup className="max-h-64 overflow-auto rounded-xl border border-border bg-popover p-1 shadow-xl">
+                          {voices.map((voice: any) => (
+                            <Select.Item
+                              key={voice.id}
+                              value={voice.id}
+                              className="flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer outline-none data-[highlighted]:bg-accent transition-colors"
+                            >
+                              <Select.ItemText>
+                                {voice.name} ({voice.accent === 'american' ? 'US' : 'UK'},{' '}
+                                {voice.gender})
+                              </Select.ItemText>
+                              <Select.ItemIndicator>
+                                <Check className="w-4 h-4 text-primary" />
+                              </Select.ItemIndicator>
+                            </Select.Item>
+                          ))}
+                        </Select.Popup>
+                      </Select.Positioner>
+                    </Select.Portal>
+                  </Select.Root>
+                )}
+              </div>
+
+              {/* Speed */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-medium">Speed</label>
+                  <span className="text-sm font-medium text-primary">{tts.speed.toFixed(1)}x</span>
+                </div>
+                <Slider.Root
+                  value={tts.speed}
+                  onValueChange={(value) => setTTSSettings({ speed: value })}
+                  min={0.5}
+                  max={2.0}
+                  step={0.1}
+                  className="flex flex-col gap-2"
+                >
+                  <Slider.Control className="relative flex items-center h-5">
+                    <Slider.Track className="h-2 w-full bg-muted rounded-full">
+                      <Slider.Indicator className="h-full bg-primary rounded-full" />
+                      <Slider.Thumb className="w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-grab active:cursor-grabbing" />
+                    </Slider.Track>
+                  </Slider.Control>
+                </Slider.Root>
+                <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                  <span>0.5x</span>
+                  <span>1.0x</span>
+                  <span>2.0x</span>
+                </div>
+              </div>
+
+              {/* Temperature */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm font-medium">Voice Variation</label>
+                  <span className="text-sm font-medium text-primary">
+                    {tts.temperature.toFixed(1)}
+                  </span>
+                </div>
+                <Slider.Root
+                  value={tts.temperature}
+                  onValueChange={(value) => setTTSSettings({ temperature: value })}
+                  min={0.0}
+                  max={1.0}
+                  step={0.1}
+                  className="flex flex-col gap-2"
+                >
+                  <Slider.Control className="relative flex items-center h-5">
+                    <Slider.Track className="h-2 w-full bg-muted rounded-full">
+                      <Slider.Indicator className="h-full bg-primary rounded-full" />
+                      <Slider.Thumb className="w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-grab active:cursor-grabbing" />
+                    </Slider.Track>
+                  </Slider.Control>
+                </Slider.Root>
+                <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                  <span>Consistent</span>
+                  <span>Natural</span>
+                  <span>Variable</span>
+                </div>
+              </div>
+
+              {/* Test Voice */}
+              <div className="space-y-2">
+                <Button
+                  onClick={testVoice}
+                  disabled={testingVoice || !isHealthy}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <Volume2 className="w-4 h-4 mr-2" />
+                  {testingVoice ? 'Playing...' : 'Test Voice'}
+                </Button>
+                {testError && <p className="text-sm text-destructive text-center">{testError}</p>}
+              </div>
+            </div>
+          </section>
+
+          {/* Reading Section */}
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold mb-4">Reading</h2>
+            <div className="space-y-6">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Font Size</label>
                 <Select.Root
-                  value={tts.voiceId}
-                  onValueChange={(value) => value && setTTSSettings({ voiceId: value })}
+                  value={fontSize}
+                  onValueChange={(value) => value && setFontSize(value as FontSize)}
                 >
                   <Select.Trigger className="flex items-center justify-between w-full h-11 px-4 rounded-xl border border-input bg-background hover:bg-accent/50 transition-colors">
-                    <Select.Value placeholder="Select a voice" />
+                    <Select.Value placeholder="Select font size" />
                     <Select.Icon>
                       <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     </Select.Icon>
                   </Select.Trigger>
                   <Select.Portal>
                     <Select.Positioner sideOffset={4}>
-                      <Select.Popup className="max-h-64 overflow-auto rounded-xl border border-border bg-popover p-1 shadow-xl">
-                        {voices.map((voice: any) => (
+                      <Select.Popup className="rounded-xl border border-border bg-popover p-1 shadow-xl">
+                        {fontSizeOptions.map((option) => (
                           <Select.Item
-                            key={voice.id}
-                            value={voice.id}
+                            key={option.value}
+                            value={option.value}
                             className="flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer outline-none data-[highlighted]:bg-accent transition-colors"
                           >
-                            <Select.ItemText>
-                              {voice.name} ({voice.accent === 'american' ? 'US' : 'UK'},{' '}
-                              {voice.gender})
-                            </Select.ItemText>
+                            <Select.ItemText>{option.label}</Select.ItemText>
                             <Select.ItemIndicator>
                               <Check className="w-4 h-4 text-primary" />
                             </Select.ItemIndicator>
@@ -203,181 +322,71 @@ export default function SettingsPage() {
                     </Select.Positioner>
                   </Select.Portal>
                 </Select.Root>
-              )}
-            </div>
+              </div>
 
-            {/* Speed */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-medium">Speed</label>
-                <span className="text-sm font-medium text-primary">{tts.speed.toFixed(1)}x</span>
-              </div>
-              <Slider.Root
-                value={tts.speed}
-                onValueChange={(value) => setTTSSettings({ speed: value })}
-                min={0.5}
-                max={2.0}
-                step={0.1}
-                className="flex flex-col gap-2"
-              >
-                <Slider.Control className="relative flex items-center h-5">
-                  <Slider.Track className="h-2 w-full bg-muted rounded-full">
-                    <Slider.Indicator className="h-full bg-primary rounded-full" />
-                    <Slider.Thumb className="w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-grab active:cursor-grabbing" />
-                  </Slider.Track>
-                </Slider.Control>
-              </Slider.Root>
-              <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                <span>0.5x</span>
-                <span>1.0x</span>
-                <span>2.0x</span>
-              </div>
-            </div>
-
-            {/* Temperature */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-medium">Voice Variation</label>
-                <span className="text-sm font-medium text-primary">
-                  {tts.temperature.toFixed(1)}
-                </span>
-              </div>
-              <Slider.Root
-                value={tts.temperature}
-                onValueChange={(value) => setTTSSettings({ temperature: value })}
-                min={0.0}
-                max={1.0}
-                step={0.1}
-                className="flex flex-col gap-2"
-              >
-                <Slider.Control className="relative flex items-center h-5">
-                  <Slider.Track className="h-2 w-full bg-muted rounded-full">
-                    <Slider.Indicator className="h-full bg-primary rounded-full" />
-                    <Slider.Thumb className="w-5 h-5 bg-white border-2 border-primary rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-grab active:cursor-grabbing" />
-                  </Slider.Track>
-                </Slider.Control>
-              </Slider.Root>
-              <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                <span>Consistent</span>
-                <span>Natural</span>
-                <span>Variable</span>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Theme</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    onClick={() => setTheme('light')}
+                    className={`h-11 px-4 rounded-xl border transition-colors font-medium flex items-center justify-center gap-2 ${
+                      theme === 'light'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-input hover:bg-accent/50'
+                    }`}
+                  >
+                    <Sun className="w-4 h-4" />
+                    Light
+                  </button>
+                  <button
+                    onClick={() => setTheme('dark')}
+                    className={`h-11 px-4 rounded-xl border transition-colors font-medium flex items-center justify-center gap-2 ${
+                      theme === 'dark'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-input hover:bg-accent/50'
+                    }`}
+                  >
+                    <Moon className="w-4 h-4" />
+                    Dark
+                  </button>
+                  <button
+                    onClick={() => setTheme('sepia')}
+                    className={`h-11 px-4 rounded-xl border transition-colors font-medium flex items-center justify-center gap-2 ${
+                      theme === 'sepia'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-input hover:bg-accent/50'
+                    }`}
+                  >
+                    <BookOpen className="w-4 h-4" />
+                    Sepia
+                  </button>
+                </div>
               </div>
             </div>
+          </section>
 
-            {/* Test Voice */}
-            <div className="space-y-2">
-              <Button
-                onClick={testVoice}
-                disabled={testingVoice || !isHealthy}
-                className="w-full"
-                variant="outline"
-              >
-                <Volume2 className="w-4 h-4 mr-2" />
-                {testingVoice ? 'Playing...' : 'Test Voice'}
-              </Button>
-              {testError && (
-                <p className="text-sm text-destructive text-center">{testError}</p>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* Reading Section */}
-        <section className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">Reading</h2>
-          <div className="space-y-6">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Font Size</label>
-              <Select.Root value={fontSize} onValueChange={(value) => value && setFontSize(value as FontSize)}>
-                <Select.Trigger className="flex items-center justify-between w-full h-11 px-4 rounded-xl border border-input bg-background hover:bg-accent/50 transition-colors">
-                  <Select.Value placeholder="Select font size" />
-                  <Select.Icon>
-                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                  </Select.Icon>
-                </Select.Trigger>
-                <Select.Portal>
-                  <Select.Positioner sideOffset={4}>
-                    <Select.Popup className="rounded-xl border border-border bg-popover p-1 shadow-xl">
-                      {fontSizeOptions.map((option) => (
-                        <Select.Item
-                          key={option.value}
-                          value={option.value}
-                          className="flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer outline-none data-[highlighted]:bg-accent transition-colors"
-                        >
-                          <Select.ItemText>{option.label}</Select.ItemText>
-                          <Select.ItemIndicator>
-                            <Check className="w-4 h-4 text-primary" />
-                          </Select.ItemIndicator>
-                        </Select.Item>
-                      ))}
-                    </Select.Popup>
-                  </Select.Positioner>
-                </Select.Portal>
-              </Select.Root>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Theme</label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => setTheme('light')}
-                  className={`h-11 px-4 rounded-xl border transition-colors font-medium flex items-center justify-center gap-2 ${
-                    theme === 'light'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-input hover:bg-accent/50'
-                  }`}
+          {/* Info Section */}
+          <section>
+            <h2 className="text-lg font-semibold mb-4">About</h2>
+            <div className="text-sm text-muted-foreground space-y-2">
+              <p>
+                <strong>Chapter</strong> - Offline-first reading & audiobook app
+              </p>
+              <p>Version: 0.1.0</p>
+              <p>
+                TTS powered by{' '}
+                <a
+                  href="https://github.com/hexgrad/kokoro"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
                 >
-                  <Sun className="w-4 h-4" />
-                  Light
-                </button>
-                <button
-                  onClick={() => setTheme('dark')}
-                  className={`h-11 px-4 rounded-xl border transition-colors font-medium flex items-center justify-center gap-2 ${
-                    theme === 'dark'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-input hover:bg-accent/50'
-                  }`}
-                >
-                  <Moon className="w-4 h-4" />
-                  Dark
-                </button>
-                <button
-                  onClick={() => setTheme('sepia')}
-                  className={`h-11 px-4 rounded-xl border transition-colors font-medium flex items-center justify-center gap-2 ${
-                    theme === 'sepia'
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-input hover:bg-accent/50'
-                  }`}
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Sepia
-                </button>
-              </div>
+                  Kokoro
+                </a>
+              </p>
             </div>
-          </div>
-        </section>
-
-        {/* Info Section */}
-        <section>
-          <h2 className="text-lg font-semibold mb-4">About</h2>
-          <div className="text-sm text-muted-foreground space-y-2">
-            <p>
-              <strong>Chapter</strong> - Offline-first reading & audiobook app
-            </p>
-            <p>Version: 0.1.0</p>
-            <p>
-              TTS powered by{' '}
-              <a
-                href="https://github.com/hexgrad/kokoro"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                Kokoro
-              </a>
-            </p>
-          </div>
-        </section>
+          </section>
+        </div>
       </main>
     </div>
   );

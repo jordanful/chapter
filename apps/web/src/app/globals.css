@@ -362,7 +362,6 @@
 
 /* Skeuomorphic Bookshelf Styles */
 .bookshelf-container {
-  --book-scale: 1;
   min-height: 100vh;
   padding-top: 1rem;
   padding-bottom: 5rem; /* Space for floating scale slider */
@@ -382,7 +381,7 @@
   align-items: end;
   padding: calc(2.5rem * var(--book-scale)) 1rem 0 1rem;
   min-height: calc(260px * var(--book-scale));
-  transition: min-height 0.15s ease-out, gap 0.15s ease-out, padding 0.15s ease-out;
+  transition: gap 0.15s ease-out, padding 0.15s ease-out, min-height 0.15s ease-out;
 }
 
 .shelf-book {
@@ -391,8 +390,7 @@
   justify-self: center;
   transform: scale(var(--book-scale));
   transform-origin: bottom center;
-  transition: transform 0.1s ease-out;
-  will-change: transform;
+  transition: transform 0.15s ease-out;
 }
 
 /* Shelf board - the wooden plank (darker) */
