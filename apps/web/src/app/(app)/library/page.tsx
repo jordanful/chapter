@@ -12,7 +12,6 @@ import { Select } from '@base-ui/react/select';
 import { Slider } from '@base-ui/react/slider';
 import { Settings, Search, X, ChevronDown, Check, Star } from 'lucide-react';
 
-// Scale slider component with smooth visual updates
 function BookScaleSlider({
   value,
   onChange,
@@ -68,24 +67,18 @@ function BookScaleSlider({
   );
 }
 
-// Smart search that matches title, author, and handles common variations
 function smartMatch(book: any, query: string): boolean {
   const q = query.toLowerCase().trim();
   if (!q) return true;
 
   const title = (book.title || '').toLowerCase();
   const author = (book.author || '').toLowerCase();
-
-  // Split query into words for multi-term matching
   const queryWords = q.split(/\s+/).filter(Boolean);
 
-  // Check if all query words match somewhere in title or author
   return queryWords.every((word) => {
-    // Direct match
     if (title.includes(word) || author.includes(word)) return true;
 
-    // Handle common abbreviations and variations
-    // "vol" matches "volume", "pt" matches "part", etc.
+    // Abbreviation expansions: "vol" -> "volume", "pt" -> "part", etc.
     const expansions: Record<string, string[]> = {
       vol: ['volume'],
       pt: ['part'],
@@ -130,7 +123,6 @@ export default function LibraryPage() {
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const lastScrollY = useRef(0);
 
-  // Load book scale from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('library_book_scale');
     if (saved) {
@@ -138,17 +130,14 @@ export default function LibraryPage() {
     }
   }, []);
 
-  // Persist sort preference
   useEffect(() => {
     localStorage.setItem('library_sort', sortBy);
   }, [sortBy]);
 
-  // Persist book scale preference
   useEffect(() => {
     localStorage.setItem('library_book_scale', bookScale.toString());
   }, [bookScale]);
 
-  // Auto-hide header on scroll down, show on scroll up
   useEffect(() => {
     let ticking = false;
 
@@ -157,16 +146,11 @@ export default function LibraryPage() {
         window.requestAnimationFrame(() => {
           const currentScrollY = window.scrollY;
 
-          // Always show if near top
           if (currentScrollY < 50) {
             setIsHeaderVisible(true);
-          }
-          // Show when scrolling up
-          else if (currentScrollY < lastScrollY.current - 5) {
+          } else if (currentScrollY < lastScrollY.current - 5) {
             setIsHeaderVisible(true);
-          }
-          // Hide when scrolling down
-          else if (currentScrollY > lastScrollY.current + 5 && currentScrollY > 100) {
+          } else if (currentScrollY > lastScrollY.current + 5 && currentScrollY > 100) {
             setIsHeaderVisible(false);
           }
 
@@ -181,22 +165,18 @@ export default function LibraryPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Filter and sort books
   const filteredBooks = useMemo(() => {
     let result = searchQuery.trim()
       ? books.filter((book) => smartMatch(book, searchQuery))
       : [...books];
 
-    // Apply favorites filter
     if (showFavoritesOnly) {
       result = result.filter((book) => book.isFavorite);
     }
 
-    // Sort books
     result.sort((a, b) => {
       switch (sortBy) {
         case 'recent':
-          // Recently opened first (books never opened go to the end)
           const aRead = a.lastReadAt ? new Date(a.lastReadAt).getTime() : 0;
           const bRead = b.lastReadAt ? new Date(b.lastReadAt).getTime() : 0;
           return bRead - aRead;
@@ -214,7 +194,6 @@ export default function LibraryPage() {
     return result;
   }, [books, searchQuery, sortBy, showFavoritesOnly]);
 
-  // Scroll to top when entering library
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -225,7 +204,6 @@ export default function LibraryPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // Drag and drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -283,11 +261,9 @@ export default function LibraryPage() {
     [uploadBooks]
   );
 
-  // Combine uploading and filtered books
   const allItems = useMemo(() => {
     const items: React.ReactNode[] = [];
 
-    // Add uploading books first (only when not searching)
     if (!searchQuery.trim()) {
       uploadingBooks.forEach((upload) => {
         items.push(
@@ -296,7 +272,6 @@ export default function LibraryPage() {
       });
     }
 
-    // Add filtered books
     filteredBooks.forEach((book) => {
       items.push(<BookCard key={book.id} book={book} />);
     });
@@ -331,7 +306,6 @@ export default function LibraryPage() {
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      {/* Drag overlay */}
       {isDragging && (
         <div className="fixed inset-0 z-50 bg-black/40 pointer-events-none">
           <div className="absolute inset-4 border-2 border-white/30 rounded-xl flex items-center justify-center">
@@ -340,7 +314,6 @@ export default function LibraryPage() {
         </div>
       )}
 
-      {/* Header */}
       <header
         className={`fixed top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/60 via-black/40 to-transparent backdrop-blur-xl border-b border-white/5 transition-all duration-300 ease-out ${
           isHeaderVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
@@ -348,7 +321,6 @@ export default function LibraryPage() {
       >
         <div className="max-w-[1400px] mx-auto px-[1.5rem] md:px-[3rem] py-4">
           <div className="flex items-center justify-between gap-4">
-            {/* Search and sort */}
             {books.length > 0 && (
               <div className="flex items-center gap-3 flex-1 max-w-2xl">
                 <div className="relative flex-1">

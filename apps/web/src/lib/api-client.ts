@@ -19,7 +19,6 @@ class APIClient {
   private token: string | null = null;
 
   constructor() {
-    // Load token from localStorage on init (client-side only)
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('chapter_token');
     }
@@ -45,7 +44,6 @@ class APIClient {
       throw new Error(error.error || `Request failed: ${response.statusText}`);
     }
 
-    // Handle empty responses (204)
     if (response.status === 204) {
       return {} as T;
     }
@@ -67,7 +65,6 @@ class APIClient {
     }
   }
 
-  // Auth
   async register(data: UserRegistration): Promise<AuthResponse> {
     const response = await this.request<AuthResponse>('/auth/register', {
       method: 'POST',
@@ -94,7 +91,6 @@ class APIClient {
     this.clearToken();
   }
 
-  // Books
   async getBooks(): Promise<any[]> {
     return this.request<any[]>('/books');
   }
@@ -163,7 +159,6 @@ class APIClient {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    // Use relative URL to go through Next.js proxy
     const response = await fetch(`/api/books/${bookId}/epub`, {
       headers,
     });
@@ -176,8 +171,6 @@ class APIClient {
   }
 
   getEpubUrl(bookId: string): string {
-    // Use relative URL to go through Next.js proxy (avoids CORS issues)
-    // The token is passed as query param since epub.js can't set headers
     const params = this.token ? `?token=${encodeURIComponent(this.token)}` : '';
     return `/api/books/${bookId}/epub${params}`;
   }
@@ -219,7 +212,6 @@ class APIClient {
     });
   }
 
-  // Progress
   async getProgress(bookId: string): Promise<any> {
     return this.request<any>(`/progress/${bookId}`);
   }
@@ -231,7 +223,6 @@ class APIClient {
     });
   }
 
-  // TTS
   async getVoices(): Promise<any[]> {
     return this.request<any[]>('/tts/voices');
   }
@@ -261,7 +252,6 @@ class APIClient {
     return response.blob();
   }
 
-  // User Settings
   async getUserSettings(): Promise<UserSettings> {
     return this.request<UserSettings>('/users/me/settings');
   }
@@ -273,7 +263,6 @@ class APIClient {
     });
   }
 
-  // Library
   async getWatchedFolders(): Promise<WatchedFolder[]> {
     return this.request<WatchedFolder[]>('/library/folders');
   }

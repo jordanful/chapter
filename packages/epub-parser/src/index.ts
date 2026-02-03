@@ -29,13 +29,9 @@ export interface EPUBStructure {
   totalCharacters: number;
 }
 
-/**
- * Parse EPUB file and extract structure
- */
 export async function parseEPUB(buffer: Buffer): Promise<EPUBStructure> {
   const zip = await JSZip.loadAsync(buffer);
 
-  // Find and parse container.xml to get OPF file path
   const containerXML = await zip.file('META-INF/container.xml')?.async('text');
   if (!containerXML) {
     throw new Error('Invalid EPUB: container.xml not found');
@@ -45,7 +41,6 @@ export async function parseEPUB(buffer: Buffer): Promise<EPUBStructure> {
   const opfPath = container.container.rootfiles[0].rootfile[0].$['full-path'];
   const opfDir = opfPath.substring(0, opfPath.lastIndexOf('/') + 1);
 
-  // Parse OPF file
   const opfXML = await zip.file(opfPath)?.async('text');
   if (!opfXML) {
     throw new Error('Invalid EPUB: OPF file not found');
@@ -54,14 +49,13 @@ export async function parseEPUB(buffer: Buffer): Promise<EPUBStructure> {
   const opf = await parseXML(opfXML);
   const pkg = opf.package;
 
-  // Extract metadata
   const metadata = extractMetadata(pkg.metadata[0]);
 
-  // Extract cover image
   let coverData: Buffer | undefined;
   try {
-    const coverItem = pkg.manifest[0].item.find((item: any) =>
-      item.$.properties === 'cover-image' || item.$.id === 'cover' || item.$.id === 'cover-image'
+    const coverItem = pkg.manifest[0].item.find(
+      (item: any) =>
+        item.$.properties === 'cover-image' || item.$.id === 'cover' || item.$.id === 'cover-image'
     );
     if (coverItem) {
       const coverPath = opfDir + coverItem.$.href;
@@ -75,11 +69,9 @@ export async function parseEPUB(buffer: Buffer): Promise<EPUBStructure> {
     metadata.coverData = coverData;
   }
 
-  // Get spine (reading order)
   const spine = pkg.spine[0].itemref || [];
   const manifest = pkg.manifest[0].item;
 
-  // Extract chapters in reading order
   const chapters: EPUBChapter[] = [];
   let totalWords = 0;
   let totalCharacters = 0;
@@ -88,21 +80,17 @@ export async function parseEPUB(buffer: Buffer): Promise<EPUBStructure> {
     const itemref = spine[i];
     const idref = itemref.$.idref;
 
-    // Find corresponding manifest item
     const manifestItem = manifest.find((item: any) => item.$.id === idref);
     if (!manifestItem) continue;
 
     const href = manifestItem.$.href;
     const fullPath = opfDir + href;
 
-    // Read chapter HTML
     const htmlContent = await zip.file(fullPath)?.async('text');
     if (!htmlContent) continue;
 
-    // Parse and clean HTML
     const { text, html } = parseHTML(htmlContent);
 
-    // Extract title from HTML or use spine label
     const title = extractTitle(html) || manifestItem.$['title'] || undefined;
 
     const wordCount = countWords(text);
@@ -126,9 +114,6 @@ export async function parseEPUB(buffer: Buffer): Promise<EPUBStructure> {
   };
 }
 
-/**
- * Parse XML string to object
- */
 function parseXML(xml: string): Promise<any> {
   return new Promise((resolve, reject) => {
     parseString(xml, { trim: true, normalizeTags: true }, (err, result) => {
@@ -138,9 +123,6 @@ function parseXML(xml: string): Promise<any> {
   });
 }
 
-/**
- * Extract metadata from OPF
- */
 function extractMetadata(meta: any): EPUBMetadata {
   const getValue = (key: string) => {
     const value = meta[`dc:${key}`]?.[0];
@@ -158,11 +140,7 @@ function extractMetadata(meta: any): EPUBMetadata {
   };
 }
 
-/**
- * Parse HTML and extract clean text
- */
 function parseHTML(html: string): { text: string; html: string } {
-  // Decode HTML entities first
   const decoded = decodeHTML(html);
 
   // Load with cheerio
@@ -170,29 +148,22 @@ function parseHTML(html: string): { text: string; html: string } {
     xmlMode: false,
   });
 
-  // Remove script, style, and other non-content tags
   $('script, style, nav, header, footer').remove();
 
-  // Get cleaned HTML
   const cleanHTML = $('body').html() || decoded;
 
-  // Extract text content
   const text = $('body')
     .text()
-    .replace(/\s+/g, ' ') // Normalize whitespace
-    .replace(/\n{3,}/g, '\n\n') // Normalize newlines
+    .replace(/\s+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 
   return { text, html: cleanHTML };
 }
 
-/**
- * Extract chapter title from HTML
- */
 function extractTitle(html: string): string | undefined {
   const $ = loadHTML(html);
 
-  // Try h1, h2, title, or first heading
   const title =
     $('h1').first().text() ||
     $('h2').first().text() ||
@@ -202,11 +173,6 @@ function extractTitle(html: string): string | undefined {
   return title.trim() || undefined;
 }
 
-/**
- * Count words in text
- */
 function countWords(text: string): number {
-  return text
-    .split(/\s+/)
-    .filter((word) => word.length > 0).length;
+  return text.split(/\s+/).filter((word) => word.length > 0).length;
 }

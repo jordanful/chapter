@@ -33,27 +33,18 @@ export class AudioCacheService {
     this.maxCacheSize = config.storage.audioCacheMaxSize;
   }
 
-  /**
-   * Generate or retrieve cached audio for a text chunk
-   */
   async getOrGenerateAudio(options: GenerateAudioOptions): Promise<CachedAudio> {
     const contentHash = createCacheHash(options.text, options.voiceId, options.settings);
 
-    // Check cache
     const cached = await this.getCachedAudio(contentHash);
     if (cached) {
-      // Update access time for LRU
       await this.updateAccessTime(cached.id);
       return cached;
     }
 
-    // Generate new audio
     return await this.generateAndCache(options, contentHash);
   }
 
-  /**
-   * Check if audio exists in cache
-   */
   private async getCachedAudio(contentHash: string): Promise<CachedAudio | null> {
     const cached = await prisma.tTSCache.findUnique({
       where: { contentHash },
@@ -72,28 +63,22 @@ export class AudioCacheService {
     };
   }
 
-  /**
-   * Generate audio and save to cache
-   */
   private async generateAndCache(
     options: GenerateAudioOptions,
     contentHash: string
   ): Promise<CachedAudio> {
-    // Generate audio via Kokoro
     const ttsResult = await kokoroService.generateSpeech({
       text: options.text,
       voiceId: options.voiceId,
       settings: options.settings,
     });
 
-    // Save audio file
     const audioFileName = `${contentHash}.${ttsResult.format}`;
     const audioPath = path.join(this.cacheDir, audioFileName);
     await saveFile(audioPath, ttsResult.audioData);
 
     const audioSize = ttsResult.audioData.length;
 
-    // Save to database
     const cached = await prisma.tTSCache.create({
       data: {
         contentHash,
@@ -114,7 +99,6 @@ export class AudioCacheService {
       },
     });
 
-    // Check if we need to evict old entries
     await this.evictIfNeeded();
 
     return {
@@ -126,9 +110,6 @@ export class AudioCacheService {
     };
   }
 
-  /**
-   * Update access time for LRU
-   */
   private async updateAccessTime(cacheId: string): Promise<void> {
     await prisma.tTSCache.update({
       where: { id: cacheId },
@@ -139,9 +120,6 @@ export class AudioCacheService {
     });
   }
 
-  /**
-   * Get current cache size
-   */
   async getCacheSize(): Promise<number> {
     const result = await prisma.tTSCache.aggregate({
       _sum: {
@@ -152,9 +130,6 @@ export class AudioCacheService {
     return result._sum.audioSize || 0;
   }
 
-  /**
-   * Evict old entries if cache exceeds max size
-   */
   private async evictIfNeeded(): Promise<void> {
     const currentSize = await this.getCacheSize();
 
@@ -164,7 +139,6 @@ export class AudioCacheService {
 
     const sizeToFree = currentSize - this.maxCacheSize;
 
-    // Get least recently used entries
     const entriesToEvict = await prisma.tTSCache.findMany({
       orderBy: {
         lastAccessed: 'asc',
@@ -180,10 +154,7 @@ export class AudioCacheService {
       }
 
       try {
-        // Delete audio file
         await deleteFile(entry.audioPath);
-
-        // Delete database entry
         await prisma.tTSCache.delete({
           where: { id: entry.id },
         });
@@ -197,9 +168,6 @@ export class AudioCacheService {
     console.log(`Evicted ${freedSize} bytes from TTS cache`);
   }
 
-  /**
-   * Stream audio file
-   */
   async streamAudio(cacheId: string): Promise<Buffer> {
     const cached = await prisma.tTSCache.findUnique({
       where: { id: cacheId },
@@ -209,16 +177,11 @@ export class AudioCacheService {
       throw new Error('Audio not found in cache');
     }
 
-    // Update access time
     await this.updateAccessTime(cacheId);
 
-    // Read and return audio file
     return await readFile(cached.audioPath);
   }
 
-  /**
-   * Generate audio for entire chapter
-   */
   async generateChapterAudio(
     bookId: string,
     chapterId: string,
@@ -232,7 +195,6 @@ export class AudioCacheService {
       return results;
     }
 
-    // Generate first chunk immediately for fast playback start
     const firstChunk = chunks[0];
     const firstAudio = await this.getOrGenerateAudio({
       text: firstChunk.text,
@@ -245,7 +207,6 @@ export class AudioCacheService {
     });
     results.push(firstAudio);
 
-    // Generate remaining chunks in background (non-blocking)
     setImmediate(async () => {
       for (let i = 1; i < chunks.length; i++) {
         try {
@@ -267,9 +228,6 @@ export class AudioCacheService {
     return results;
   }
 
-  /**
-   * Generate a single chunk on-demand (for fallback when background generation is slow)
-   */
   async generateChunkOnDemand(
     bookId: string,
     chapterId: string,
@@ -288,9 +246,6 @@ export class AudioCacheService {
     });
   }
 
-  /**
-   * Get cache statistics
-   */
   async getCacheStats() {
     const totalEntries = await prisma.tTSCache.count();
     const totalSize = await this.getCacheSize();
@@ -298,7 +253,7 @@ export class AudioCacheService {
     const recentEntries = await prisma.tTSCache.count({
       where: {
         createdAt: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
         },
       },
     });
@@ -314,9 +269,6 @@ export class AudioCacheService {
     };
   }
 
-  /**
-   * Clear all cache
-   */
   async clearCache(): Promise<void> {
     const entries = await prisma.tTSCache.findMany();
 

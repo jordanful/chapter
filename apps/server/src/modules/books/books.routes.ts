@@ -2,7 +2,6 @@ import { FastifyPluginAsync } from 'fastify';
 import { booksService } from './books.service';
 
 export const booksRoutes: FastifyPluginAsync = async (app) => {
-  // Proxy Open Library cover images to bypass CORS (no auth required)
   app.get('/cover-proxy', async (request, reply) => {
     try {
       const { url } = request.query as { url: string };
@@ -21,7 +20,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
 
       const buffer = await response.arrayBuffer();
 
-      // Open Library returns a 43-byte placeholder for missing covers
       if (buffer.byteLength <= 100) {
         app.log.warn(
           `Cover proxy: Placeholder image received - ${url} (${buffer.byteLength} bytes)`
@@ -43,9 +41,7 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Authentication decorator for all routes except cover-proxy
   app.addHook('onRequest', async (request, reply) => {
-    // Skip auth for cover-proxy endpoint
     if (request.url.includes('/cover-proxy')) {
       return;
     }
@@ -57,7 +53,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Get user's books
   app.get('/', async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
@@ -69,7 +64,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Upload book
   app.post('/', async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
@@ -89,7 +83,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Get book details
   app.get('/:bookId', async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
@@ -103,7 +96,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Get book structure
   app.get('/:bookId/structure', async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
@@ -117,7 +109,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Get chapter
   app.get('/:bookId/chapter/:index', async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
@@ -131,7 +122,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Get cover
   app.get('/:bookId/cover', async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
@@ -150,27 +140,21 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Get EPUB file (for epub.js rendering)
-  // Supports both Authorization header and ?token query param (for epub.js URL loading)
   app.get(
     '/:bookId/epub',
     {
       preValidation: async (request, reply) => {
-        // First try normal JWT verification from header
         try {
           await request.jwtVerify();
           return;
         } catch {
-          // If header auth fails, try query param token
           const { token } = request.query as { token?: string };
           if (token) {
             try {
               const decoded = app.jwt.verify(token);
               (request as any).user = decoded;
               return;
-            } catch {
-              // Token invalid
-            }
+            } catch {}
           }
           reply.code(401).send({ error: 'Unauthorized' });
         }
@@ -194,7 +178,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   );
 
-  // Delete book
   app.delete('/:bookId', async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
@@ -208,7 +191,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Get alternative covers from Open Library
   app.get('/:bookId/covers/alternatives', async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
@@ -222,7 +204,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Update cover from Open Library
   app.put('/:bookId/cover', async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
@@ -233,7 +214,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(400).send({ error: 'coverUrl is required' });
       }
 
-      // Validate that URL is from Open Library
       if (!coverUrl.startsWith('https://covers.openlibrary.org/')) {
         return reply.code(400).send({ error: 'Invalid cover URL' });
       }
@@ -246,7 +226,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Update book metadata
   app.patch('/:bookId', async (request, reply) => {
     try {
       const userId = (request.user as any).userId;
@@ -270,7 +249,6 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Toggle favorite status
   app.put('/:bookId/favorite', async (request, reply) => {
     try {
       const userId = (request.user as any).userId;

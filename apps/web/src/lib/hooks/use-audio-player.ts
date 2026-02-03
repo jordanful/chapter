@@ -60,7 +60,6 @@ export function useAudioPlayer({
     error: null,
   });
 
-  // Initialize audio element
   useEffect(() => {
     if (typeof window !== 'undefined') {
       audioRef.current = new Audio();
@@ -75,19 +74,16 @@ export function useAudioPlayer({
     }
   }, []);
 
-  // Load chunk audio
   const loadChunk = useCallback(
     async (chunkIndex: number) => {
       if (!audioRef.current) return;
 
-      // If chunk is missing, request it on-demand
       if (!chunks[chunkIndex]) {
         if (onChunkNeeded) {
           setState((prev) => ({ ...prev, isLoading: true, error: null }));
           pendingChunkRef.current = chunkIndex;
           try {
             await onChunkNeeded(chunkIndex);
-            // Chunk will be loaded when chunks prop updates (see useEffect below)
             return;
           } catch (error) {
             pendingChunkRef.current = null;
@@ -125,7 +121,6 @@ export function useAudioPlayer({
     [chunks, onChunkChange, onChunkNeeded]
   );
 
-  // Play/Pause
   const togglePlay = useCallback(async () => {
     if (!audioRef.current) return;
 
@@ -141,42 +136,36 @@ export function useAudioPlayer({
     }
   }, [state.isPlaying]);
 
-  // Seek to time
   const seek = useCallback((time: number) => {
     if (!audioRef.current) return;
     audioRef.current.currentTime = time;
     setState((prev) => ({ ...prev, currentTime: time }));
   }, []);
 
-  // Set speed
   const setSpeed = useCallback((speed: number) => {
     if (!audioRef.current) return;
     audioRef.current.playbackRate = speed;
     setState((prev) => ({ ...prev, speed }));
   }, []);
 
-  // Set volume
   const setVolume = useCallback((volume: number) => {
     if (!audioRef.current) return;
     audioRef.current.volume = volume;
     setState((prev) => ({ ...prev, volume }));
   }, []);
 
-  // Next chunk
   const nextChunk = useCallback(() => {
     if (state.currentChunkIndex < chunks.length - 1) {
       loadChunk(state.currentChunkIndex + 1);
     }
   }, [state.currentChunkIndex, chunks.length, loadChunk]);
 
-  // Previous chunk
   const previousChunk = useCallback(() => {
     if (state.currentChunkIndex > 0) {
       loadChunk(state.currentChunkIndex - 1);
     }
   }, [state.currentChunkIndex, loadChunk]);
 
-  // Audio event listeners
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -184,7 +173,6 @@ export function useAudioPlayer({
     const handleTimeUpdate = () => {
       setState((prev) => ({ ...prev, currentTime: audio.currentTime }));
 
-      // Calculate global position
       const currentChunk = chunks[state.currentChunkIndex];
       if (currentChunk && onPositionChange) {
         const chunkProgress = audio.currentTime / currentChunk.audioDuration;
@@ -207,7 +195,6 @@ export function useAudioPlayer({
 
     const handleEnded = () => {
       setState((prev) => ({ ...prev, isPlaying: false }));
-      // Auto-play next chunk
       if (state.currentChunkIndex < chunks.length - 1) {
         nextChunk();
         setTimeout(() => {
@@ -251,7 +238,6 @@ export function useAudioPlayer({
     };
   }, [chunks, state.currentChunkIndex, onPositionChange, nextChunk]);
 
-  // Load pending chunk when it becomes available after on-demand generation
   useEffect(() => {
     const pendingIndex = pendingChunkRef.current;
     if (pendingIndex !== null && chunks[pendingIndex]) {
@@ -260,10 +246,8 @@ export function useAudioPlayer({
     }
   }, [chunks, loadChunk]);
 
-  // Load initial chunk (or restored chunk)
   useEffect(() => {
     if (chunks.length > 0 && !audioRef.current?.src) {
-      // Find initial chunk index if we have an initialChunkId
       let chunkIndex = 0;
       if (initialChunkId) {
         const foundIndex = chunks.findIndex((c) => c.id === initialChunkId);
@@ -274,7 +258,6 @@ export function useAudioPlayer({
 
       loadChunk(chunkIndex);
 
-      // Seek to initial time after chunk loads
       if (initialTime !== undefined && initialTime > 0) {
         const seekWhenReady = () => {
           if (audioRef.current && audioRef.current.readyState >= 1) {
@@ -289,7 +272,6 @@ export function useAudioPlayer({
     }
   }, [chunks, loadChunk, initialChunkId, initialTime]);
 
-  // Apply initial speed and volume
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.playbackRate = state.speed;

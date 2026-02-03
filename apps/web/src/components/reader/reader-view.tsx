@@ -32,17 +32,14 @@ export function ReaderView({
   const hasRestoredScroll = useRef(false);
   const restoreTimeouts = useRef<NodeJS.Timeout[]>([]);
 
-  // Animate content in when chapter loads
   useEffect(() => {
     if (chapter && !isLoading) {
       setIsVisible(false);
-      // Small delay for smooth transition
       const timer = setTimeout(() => setIsVisible(true), 50);
       return () => clearTimeout(timer);
     }
   }, [chapter, isLoading]);
 
-  // Restore scroll position when chapter loads with saved position
   useEffect(() => {
     if (
       initialScrollPosition &&
@@ -51,14 +48,11 @@ export function ReaderView({
       !hasRestoredScroll.current &&
       !isLoading
     ) {
-      // Mark as restored immediately to prevent multiple restoration attempts
       hasRestoredScroll.current = true;
 
-      // Clear any existing timeouts
       restoreTimeouts.current.forEach(clearTimeout);
       restoreTimeouts.current = [];
 
-      // Wait for content to be fully rendered before scrolling
       const restoreScroll = () => {
         const documentHeight = document.documentElement.scrollHeight;
         const windowHeight = window.innerHeight;
@@ -70,7 +64,6 @@ export function ReaderView({
         }
       };
 
-      // Try restoring with delays
       restoreTimeouts.current = [setTimeout(restoreScroll, 100), setTimeout(restoreScroll, 300)];
     }
 
@@ -79,12 +72,10 @@ export function ReaderView({
     };
   }, [chapter, initialScrollPosition, isLoading]);
 
-  // Reset restoration flag when chapter changes
   useEffect(() => {
     hasRestoredScroll.current = false;
   }, [chapter]);
 
-  // Track scroll progress
   useEffect(() => {
     const handleScroll = () => {
       if (!contentRef.current) return;
@@ -97,7 +88,6 @@ export function ReaderView({
 
       setScrollProgress(progress);
 
-      // Notify parent of scroll position change
       if (onScrollChange) {
         onScrollChange(progress);
       }
@@ -145,17 +135,14 @@ export function ReaderView({
 
   return (
     <main className="min-h-screen pb-24 bg-[hsl(var(--reader-bg))]">
-      {/* Reading content */}
       <article
         ref={contentRef}
         className={`reader-content max-w-[42rem] mx-auto px-6 sm:px-8 md:px-12 pt-24 pb-16 transition-opacity duration-500 ${
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        {/* Chapter title */}
         {chapter.title && (
           <header className="mb-12 animate-fade-in">
-            {/* Decorative ornament */}
             <div className="flex items-center justify-center mb-6">
               <div className="h-px w-12 bg-gradient-to-r from-transparent via-foreground/20 to-transparent" />
             </div>
@@ -164,14 +151,12 @@ export function ReaderView({
               {chapter.title}
             </h1>
 
-            {/* Decorative ornament */}
             <div className="flex items-center justify-center mt-6">
               <div className="h-px w-12 bg-gradient-to-r from-transparent via-foreground/20 to-transparent" />
             </div>
           </header>
         )}
 
-        {/* Chapter content */}
         <div className="space-y-6">
           {chapter.paragraphs?.map((paragraph: any, index: number) => (
             <p
@@ -189,7 +174,6 @@ export function ReaderView({
           ))}
         </div>
 
-        {/* End of chapter ornament */}
         <div
           className="flex items-center justify-center mt-16 mb-8 animate-fade-in"
           style={{ animationDelay: '600ms' }}

@@ -16,7 +16,6 @@ const loginSchema = z.object({
 });
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
-  // Register
   app.post('/register', async (request, reply) => {
     try {
       const body = registerSchema.parse(request.body);
@@ -25,7 +24,6 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         app.jwt.sign(payload, { expiresIn: '7d' })
       );
 
-      // Seed books for new user (async, don't block response)
       const userId = (result.user as any).id;
       seedService.seedBooksForUser(userId).catch((error) => {
         console.error('Failed to seed books for new user:', error);
@@ -42,7 +40,6 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Login
   app.post('/login', async (request, reply) => {
     try {
       const body = loginSchema.parse(request.body);
@@ -62,7 +59,6 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Get current user
   app.get('/me', async (request, reply) => {
     try {
       await request.jwtVerify();

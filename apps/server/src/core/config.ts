@@ -23,10 +23,7 @@ export const config = {
   storage: {
     booksPath: process.env.BOOK_STORAGE_PATH || path.join(process.cwd(), 'storage', 'books'),
     audioPath: process.env.AUDIO_CACHE_PATH || path.join(process.cwd(), 'storage', 'audio'),
-    audioCacheMaxSize: parseInt(
-      process.env.AUDIO_CACHE_MAX_SIZE || '10737418240',
-      10
-    ), // 10GB
+    audioCacheMaxSize: parseInt(process.env.AUDIO_CACHE_MAX_SIZE || '10737418240', 10),
   },
 
   tts: {
@@ -36,10 +33,13 @@ export const config = {
 
   library: {
     maxWatchedFolders: parseInt(process.env.MAX_WATCHED_FOLDERS || '20', 10),
-    scanTimeout: parseInt(process.env.SCAN_TIMEOUT || '300000', 10), // 5 minutes
+    scanTimeout: parseInt(process.env.SCAN_TIMEOUT || '300000', 10),
     maxScanDepth: parseInt(process.env.MAX_SCAN_DEPTH || '10', 10),
     defaultLibraryPath:
       process.env.DEFAULT_LIBRARY_PATH ||
-      path.join(process.env.BOOK_STORAGE_PATH || path.join(process.cwd(), 'storage', 'books'), 'library'),
+      path.join(
+        process.env.BOOK_STORAGE_PATH || path.join(process.cwd(), 'storage', 'books'),
+        'library'
+      ),
   },
 };

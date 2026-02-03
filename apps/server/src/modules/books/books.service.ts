@@ -89,7 +89,6 @@ export class BooksService {
   }
 
   async getBookStructure(userId: string, bookId: string): Promise<any> {
-    // Verify user has access
     await this.getBookById(userId, bookId);
 
     const chapters = await prisma.chapter.findMany({
@@ -111,7 +110,6 @@ export class BooksService {
   }
 
   async getChapter(userId: string, bookId: string, chapterIndex: number): Promise<any> {
-    // Verify user has access
     await this.getBookById(userId, bookId);
 
     const chapter = await prisma.chapter.findUnique({
@@ -136,10 +134,8 @@ export class BooksService {
   }
 
   async deleteBook(userId: string, bookId: string): Promise<void> {
-    // Verify user has access
     await this.getBookById(userId, bookId);
 
-    // Remove user-book link
     await prisma.userBook.delete({
       where: {
         userId_bookId: {
@@ -149,25 +145,21 @@ export class BooksService {
       },
     });
 
-    // Check if any other users have this book
     const remainingUsers = await prisma.userBook.count({
       where: { bookId },
     });
 
-    // If no other users, delete the book and its files
     if (remainingUsers === 0) {
       const book = await prisma.book.findUnique({
         where: { id: bookId },
       });
 
       if (book) {
-        // Delete files
         await deleteFile(book.filePath);
         if (book.coverPath) {
           await deleteFile(book.coverPath);
         }
 
-        // Delete book (cascades to chapters, paragraphs, etc.)
         await prisma.book.delete({
           where: { id: bookId },
         });
@@ -209,30 +201,19 @@ export class BooksService {
     bookId: string,
     coverUrl: string
   ): Promise<void> {
-    // Verify user has access
     const book = await this.getBookById(userId, bookId);
 
-    // Download the cover image
     const coverBuffer = await openLibraryService.downloadCover(coverUrl);
-
-    // Determine file extension from URL or default to jpg
     const extension = coverUrl.includes('.png') ? 'png' : 'jpg';
-
-    // Use the book's fileHash to create a unique cover path
-    // The filePath is like: {booksPath}/{fileHash}.epub
-    // We want: {booksPath}/{fileHash}-cover.{ext}
     const fileHash = path.basename(book.filePath, '.epub');
     const coverPath = path.join(path.dirname(book.filePath), `${fileHash}-cover.${extension}`);
 
-    // Delete old cover if it exists and is different
     if (book.coverPath && book.coverPath !== coverPath) {
       await deleteFile(book.coverPath);
     }
 
-    // Save new cover
     await saveFile(coverPath, coverBuffer);
 
-    // Update database
     await prisma.book.update({
       where: { id: bookId },
       data: { coverPath },
@@ -253,7 +234,6 @@ export class BooksService {
       coverUrl?: string;
     }
   ): Promise<void> {
-    // Verify user has access
     await this.getBookById(userId, bookId);
 
     const updateData: any = {};
@@ -265,12 +245,10 @@ export class BooksService {
     if (metadata.language !== undefined) updateData.language = metadata.language;
     if (metadata.description !== undefined) updateData.description = metadata.description;
 
-    // If coverUrl is provided, download and save it
     if (metadata.coverUrl) {
       await this.updateCoverFromOpenLibrary(userId, bookId, metadata.coverUrl);
     }
 
-    // Update book metadata
     await prisma.book.update({
       where: { id: bookId },
       data: updateData,
@@ -278,7 +256,6 @@ export class BooksService {
   }
 
   async setFavorite(userId: string, bookId: string, isFavorite: boolean): Promise<void> {
-    // Verify user has access and update favorite status
     await prisma.userBook.update({
       where: {
         userId_bookId: {

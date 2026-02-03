@@ -1,7 +1,3 @@
-/**
- * Offline storage using IndexedDB for downloaded books
- */
-
 const DB_NAME = 'chapter-offline';
 const DB_VERSION = 1;
 const BOOKS_STORE = 'books';
@@ -39,12 +35,10 @@ class OfflineStorage {
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
 
-        // Books store
         if (!db.objectStoreNames.contains(BOOKS_STORE)) {
           db.createObjectStore(BOOKS_STORE, { keyPath: 'id' });
         }
 
-        // Chapters store
         if (!db.objectStoreNames.contains(CHAPTERS_STORE)) {
           const chaptersStore = db.createObjectStore(CHAPTERS_STORE, {
             keyPath: ['bookId', 'chapterIndex'],
@@ -52,7 +46,6 @@ class OfflineStorage {
           chaptersStore.createIndex('bookId', 'bookId', { unique: false });
         }
 
-        // Covers store
         if (!db.objectStoreNames.contains(COVERS_STORE)) {
           db.createObjectStore(COVERS_STORE, { keyPath: 'bookId' });
         }
@@ -60,7 +53,6 @@ class OfflineStorage {
     });
   }
 
-  // Books
   async saveBook(book: OfflineBook): Promise<void> {
     await this.init();
     return new Promise((resolve, reject) => {
@@ -105,11 +97,9 @@ class OfflineStorage {
         'readwrite'
       );
 
-      // Delete book
       const booksStore = transaction.objectStore(BOOKS_STORE);
       booksStore.delete(bookId);
 
-      // Delete chapters
       const chaptersStore = transaction.objectStore(CHAPTERS_STORE);
       const index = chaptersStore.index('bookId');
       const chaptersRequest = index.openCursor(IDBKeyRange.only(bookId));
@@ -122,7 +112,6 @@ class OfflineStorage {
         }
       };
 
-      // Delete cover
       const coversStore = transaction.objectStore(COVERS_STORE);
       coversStore.delete(bookId);
 
@@ -131,7 +120,6 @@ class OfflineStorage {
     });
   }
 
-  // Chapters
   async saveChapter(chapter: OfflineChapter): Promise<void> {
     await this.init();
     return new Promise((resolve, reject) => {
@@ -156,7 +144,6 @@ class OfflineStorage {
     });
   }
 
-  // Covers
   async saveCover(bookId: string, blob: Blob): Promise<void> {
     await this.init();
     return new Promise((resolve, reject) => {
@@ -181,13 +168,11 @@ class OfflineStorage {
     });
   }
 
-  // Check if book is downloaded
   async isBookDownloaded(bookId: string): Promise<boolean> {
     const book = await this.getBook(bookId);
     return !!book;
   }
 
-  // Get storage usage
   async getStorageEstimate(): Promise<{ usage: number; quota: number }> {
     if ('storage' in navigator && 'estimate' in navigator.storage) {
       const estimate = await navigator.storage.estimate();

@@ -9,7 +9,6 @@ export const usersRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // Placeholder routes - to be implemented
   app.get('/me/settings', async (request, reply) => {
     return reply.send({ message: 'User settings - to be implemented' });
   });

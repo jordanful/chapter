@@ -24,7 +24,6 @@ export function ReadAlongView({
 
   const isHighlighting = currentWordIndex !== null && currentWordIndex !== undefined;
 
-  // Track scroll progress
   const handleScroll = useCallback(() => {
     if (!onScrollProgress) return;
     const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
@@ -38,7 +37,6 @@ export function ReadAlongView({
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // Animate content in when chapter loads
   useEffect(() => {
     if (chapter && !isLoading) {
       setIsVisible(false);
@@ -47,22 +45,18 @@ export function ReadAlongView({
     }
   }, [chapter, isLoading]);
 
-  // Auto-scroll to keep highlighted word in view (accounting for audio player)
   useEffect(() => {
     if (!enableAutoScroll || !highlightedWordRef.current) return;
 
     const element = highlightedWordRef.current;
     const rect = element.getBoundingClientRect();
-    const audioPlayerHeight = 140; // Height of fixed audio player at bottom
-    const topPadding = 100; // Space from top of viewport
+    const audioPlayerHeight = 140;
+    const topPadding = 100;
 
-    // Calculate visible area (viewport minus audio player)
     const visibleTop = topPadding;
     const visibleBottom = window.innerHeight - audioPlayerHeight;
 
-    // Check if word is outside the safe visible area
     if (rect.top < visibleTop || rect.bottom > visibleBottom) {
-      // Calculate scroll position to center word in the safe area
       const safeAreaCenter = visibleTop + (visibleBottom - visibleTop) / 2;
       const scrollTarget = window.scrollY + rect.top - safeAreaCenter;
 
@@ -116,7 +110,6 @@ export function ReadAlongView({
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        {/* Chapter title */}
         {chapter.title && (
           <header className="mb-12 animate-fade-in">
             <div className="flex items-center justify-center mb-6">
@@ -133,19 +126,16 @@ export function ReadAlongView({
           </header>
         )}
 
-        {/* Chapter content with word highlighting */}
         <div className="space-y-6">
           {chapter.paragraphs?.map((paragraph: any, pIndex: number) => {
             const cleanedText = fixEncodingIssues(paragraph.text);
             const words = cleanedText.split(/(\s+)/);
 
-            // Calculate paragraph start index by summing previous paragraphs + separators
             const paragraphStartIndex = chapter.paragraphs
               .slice(0, pIndex)
               .reduce((sum: number, p: any, idx: number) => {
                 const pWords = p.text.split(/(\s+)/).length;
-                // Add 1 for the \n\n separator after each paragraph (except the last)
-                return sum + pWords + 1; // +1 for separator
+                return sum + pWords + 1;
               }, 0);
 
             return (
@@ -198,7 +188,6 @@ export function ReadAlongView({
           })}
         </div>
 
-        {/* End of chapter ornament */}
         <div
           className="flex items-center justify-center mt-16 mb-8 animate-fade-in"
           style={{ animationDelay: '600ms' }}

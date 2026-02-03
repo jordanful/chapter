@@ -1,7 +1,6 @@
 import { config } from '../../core/config';
 import { TTSGenerateRequest, TTSGenerateResponse, Voice, KokoroVoice } from '@chapter/types';
 
-// Kokoro voice definitions
 export const KOKORO_VOICES: Voice[] = [
   { id: 'af_bella', name: 'Bella', language: 'en-US', accent: 'american', gender: 'female' },
   { id: 'af_nicole', name: 'Nicole', language: 'en-US', accent: 'american', gender: 'female' },
@@ -21,9 +20,6 @@ export class KokoroService {
     this.serviceUrl = config.tts.kokoroServiceUrl;
   }
 
-  /**
-   * Generate speech from text using Kokoro TTS
-   */
   async generateSpeech(request: TTSGenerateRequest): Promise<TTSGenerateResponse> {
     try {
       const response = await fetch(`${this.serviceUrl}/synthesize`, {
@@ -45,32 +41,29 @@ export class KokoroService {
 
       const audioData = Buffer.from(await response.arrayBuffer());
 
-      // Get duration from response headers if available
       const durationHeader = response.headers.get('X-Audio-Duration');
-      const duration = durationHeader ? parseFloat(durationHeader) : this.estimateDuration(audioData);
+      const duration = durationHeader
+        ? parseFloat(durationHeader)
+        : this.estimateDuration(audioData);
 
       return {
         audioData,
         duration,
         format: 'wav',
-        sampleRate: 24000, // Kokoro default
+        sampleRate: 24000,
       };
     } catch (error) {
       console.error('Kokoro TTS error:', error);
-      throw new Error(`Failed to generate speech: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to generate speech: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
-  /**
-   * Get list of available voices
-   */
   getVoices(): Voice[] {
     return KOKORO_VOICES;
   }
 
-  /**
-   * Check if Kokoro service is available
-   */
   async healthCheck(): Promise<boolean> {
     try {
       const response = await fetch(`${this.serviceUrl}/health`, {
@@ -83,24 +76,14 @@ export class KokoroService {
     }
   }
 
-  /**
-   * Estimate audio duration from WAV file size
-   * This is a rough estimate based on typical WAV parameters
-   */
   private estimateDuration(audioData: Buffer): number {
-    // WAV format: 24kHz, 16-bit, mono
-    // Bytes per second = sample_rate * (bits_per_sample / 8) * channels
-    const bytesPerSecond = 24000 * 2 * 1; // 48000 bytes/sec
-
-    // Subtract WAV header (typically 44 bytes)
+    // WAV: 24kHz, 16-bit, mono = 48000 bytes/sec
+    const bytesPerSecond = 24000 * 2 * 1;
     const dataSize = audioData.length - 44;
 
     return dataSize / bytesPerSecond;
   }
 
-  /**
-   * Validate voice ID
-   */
   isValidVoice(voiceId: string): voiceId is KokoroVoice {
     return KOKORO_VOICES.some((v) => v.id === voiceId);
   }

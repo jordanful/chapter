@@ -8,35 +8,28 @@ import { saveFile } from '../../core/storage';
 
 export class EPUBProcessor {
   async processEPUB(userId: string, epubBuffer: Buffer, filename: string): Promise<string> {
-    // Calculate file hash for deduplication
     const fileHash = crypto.createHash('sha256').update(epubBuffer).digest('hex');
 
-    // Check if book already exists
     let book = await prisma.book.findUnique({
       where: { fileHash },
     });
 
     if (book) {
-      // Book exists, just link to user
       await this.linkBookToUser(userId, book.id);
       return book.id;
     }
 
-    // Parse EPUB
     const structure = await parseEPUB(epubBuffer);
 
-    // Save EPUB file
     const filePath = path.join(config.storage.booksPath, `${fileHash}.epub`);
     await saveFile(filePath, epubBuffer);
 
-    // Save cover if available
     let coverPath: string | undefined;
     if (structure.metadata.coverData) {
       coverPath = path.join(config.storage.booksPath, `${fileHash}-cover.jpg`);
       await saveFile(coverPath, structure.metadata.coverData);
     }
 
-    // Normalize author field (handle both string and object formats)
     const normalizeField = (field: any): string | undefined => {
       if (!field) return undefined;
       if (typeof field === 'string') return field;
@@ -44,7 +37,6 @@ export class EPUBProcessor {
       return undefined;
     };
 
-    // Create book in database
     book = await prisma.book.create({
       data: {
         title: normalizeField(structure.metadata.title) || 'Untitled',
@@ -64,7 +56,6 @@ export class EPUBProcessor {
       },
     });
 
-    // Process chapters
     let globalCharPosition = 0;
 
     for (const chapterData of structure.chapters) {
@@ -86,13 +77,11 @@ export class EPUBProcessor {
         },
       });
 
-      // Split into paragraphs and tokenize
       await this.processParagraphs(chapter.id, chapterData.textContent, startPosition);
 
       globalCharPosition = endPosition;
     }
 
-    // Link book to user
     await this.linkBookToUser(userId, book.id);
 
     return book.id;
@@ -127,13 +116,11 @@ export class EPUBProcessor {
         },
       });
 
-      // Move position forward (include paragraph text + newline separator)
-      paragraphStartInChapter += text.length + 1; // +1 for newline
+      paragraphStartInChapter += text.length + 1;
     }
   }
 
   private async linkBookToUser(userId: string, bookId: string): Promise<void> {
-    // Check if already linked
     const existing = await prisma.userBook.findUnique({
       where: {
         userId_bookId: {
