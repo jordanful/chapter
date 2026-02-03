@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
-import { X, Loader2, AlertCircle, Check, ImageOff } from 'lucide-react';
+import { X, Loader2, AlertCircle, Check, ImageOff, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAlternativeCovers, useUpdateCover } from '@/lib/hooks/use-cover-picker';
 import { apiClient } from '@/lib/api-client';
@@ -36,7 +36,9 @@ function CoverImage({
 
   if (error) {
     return (
-      <div className={cn("flex items-center justify-center bg-muted text-muted-foreground", className)}>
+      <div
+        className={cn('flex items-center justify-center bg-muted text-muted-foreground', className)}
+      >
         <ImageOff className="w-6 h-6" />
       </div>
     );
@@ -45,14 +47,14 @@ function CoverImage({
   return (
     <>
       {!loaded && (
-        <div className={cn("flex items-center justify-center bg-muted", className)}>
+        <div className={cn('flex items-center justify-center bg-muted', className)}>
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         </div>
       )}
       <img
         src={src}
         alt={alt}
-        className={cn(className, !loaded && "hidden")}
+        className={cn(className, !loaded && 'hidden')}
         onLoad={() => setLoaded(true)}
         onError={() => {
           setError(true);
@@ -70,11 +72,7 @@ export function CoverPickerDialog({ book, isOpen, onClose }: CoverPickerDialogPr
   const [currentCoverError, setCurrentCoverError] = useState(false);
   const [failedCovers, setFailedCovers] = useState<Set<string>>(new Set());
 
-  const {
-    data: covers,
-    isLoading,
-    error,
-  } = useAlternativeCovers(book.id, isOpen);
+  const { data: covers, isLoading, error } = useAlternativeCovers(book.id, isOpen);
 
   const updateCover = useUpdateCover(book.id);
 
@@ -87,7 +85,7 @@ export function CoverPickerDialog({ book, isOpen, onClose }: CoverPickerDialogPr
     return url;
   };
 
-  const validCovers = covers?.filter(c => !failedCovers.has(c.coverUrl)) || [];
+  const validCovers = covers?.filter((c) => !failedCovers.has(c.coverUrl)) || [];
 
   useEffect(() => {
     if (isOpen && book.coverPath) {
@@ -139,9 +137,7 @@ export function CoverPickerDialog({ book, isOpen, onClose }: CoverPickerDialogPr
         <Dialog.Popup className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background rounded-xl shadow-2xl max-w-3xl w-[calc(100%-2rem)] max-h-[85vh] flex flex-col outline-none transition-all data-[ending-style]:opacity-0 data-[ending-style]:scale-95 data-[starting-style]:opacity-0 data-[starting-style]:scale-95">
           {/* Header */}
           <div className="flex items-center justify-between p-5 border-b">
-            <Dialog.Title className="text-lg font-semibold">
-              Change Cover
-            </Dialog.Title>
+            <Dialog.Title className="text-lg font-semibold">Change Cover</Dialog.Title>
             <Dialog.Close className="p-2 -m-2 rounded-lg hover:bg-muted transition-colors">
               <X className="w-5 h-5" />
             </Dialog.Close>
@@ -151,10 +147,8 @@ export function CoverPickerDialog({ book, isOpen, onClose }: CoverPickerDialogPr
           <div className="flex-1 overflow-y-auto p-5">
             {/* Current cover */}
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                Current Cover
-              </h3>
-              <div className="w-28 aspect-[2/3] bg-muted rounded-xl overflow-hidden shadow-sm">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">Current Cover</h3>
+              <div className="w-28 aspect-[2/3] rounded-xl overflow-hidden shadow-sm">
                 {currentCoverUrl && !currentCoverError ? (
                   <CoverImage
                     src={currentCoverUrl}
@@ -162,8 +156,16 @@ export function CoverPickerDialog({ book, isOpen, onClose }: CoverPickerDialogPr
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                    <span className="text-3xl">📖</span>
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-stone-700 to-stone-900 p-3">
+                    <BookOpen className="w-5 h-5 text-white/30 mb-2" />
+                    <p className="text-white/80 text-xs font-medium text-center leading-tight line-clamp-3">
+                      {book.title}
+                    </p>
+                    {book.author && (
+                      <p className="text-white/50 text-[10px] text-center mt-1 line-clamp-1">
+                        {book.author}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
@@ -214,7 +216,7 @@ export function CoverPickerDialog({ book, isOpen, onClose }: CoverPickerDialogPr
                         alt={cover.editionTitle || 'Alternative cover'}
                         className="w-full h-full object-cover"
                         onError={() => {
-                          setFailedCovers(prev => new Set([...prev, cover.coverUrl]));
+                          setFailedCovers((prev) => new Set([...prev, cover.coverUrl]));
                         }}
                       />
                       {selectedCover?.coverUrl === cover.coverUrl && (
@@ -241,10 +243,7 @@ export function CoverPickerDialog({ book, isOpen, onClose }: CoverPickerDialogPr
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button
-              onClick={handleSave}
-              disabled={!selectedCover || updateCover.isPending}
-            >
+            <Button onClick={handleSave} disabled={!selectedCover || updateCover.isPending}>
               {updateCover.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

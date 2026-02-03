@@ -160,9 +160,7 @@ export function UnifiedControls({
 
             {/* Right: Mode toggle + Menu */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="sm:scale-110 origin-right">
-                <ModeToggle mode={mode} onModeChange={onModeChange} />
-              </div>
+              <ModeToggle mode={mode} onModeChange={onModeChange} />
 
               <button
                 onClick={onToggleNav}

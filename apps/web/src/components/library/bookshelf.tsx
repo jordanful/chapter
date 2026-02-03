@@ -1,6 +1,7 @@
 'use client';
 
-import { ReactNode, useMemo, Children, useState, useEffect } from 'react';
+import { ReactNode, useMemo, Children, useState, useEffect, useRef } from 'react';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 
 interface BookshelfProps {
   children: ReactNode;
@@ -34,8 +35,12 @@ function useBooksPerShelf() {
   return booksPerShelf;
 }
 
+// Estimated shelf height for virtualization (book + shelf board)
+const SHELF_HEIGHT = 280;
+
 export function Bookshelf({ children }: BookshelfProps) {
   const booksPerShelf = useBooksPerShelf();
+  const listRef = useRef<HTMLDivElement>(null);
 
   const shelves = useMemo(() => {
     const items = Children.toArray(children);
@@ -55,22 +60,54 @@ export function Bookshelf({ children }: BookshelfProps) {
     return result;
   }, [children, booksPerShelf]);
 
+  const virtualizer = useWindowVirtualizer({
+    count: shelves.length,
+    estimateSize: () => SHELF_HEIGHT,
+    overscan: 2, // Render 2 extra shelves above/below viewport for smooth scrolling
+    scrollMargin: listRef.current?.offsetTop ?? 0,
+  });
+
+  const virtualItems = virtualizer.getVirtualItems();
+
   return (
-    <div className="bookshelf-container">
-      {shelves.map((shelfBooks, index) => (
-        <div key={index} className="shelf">
-          <div className="shelf-books">
-            {shelfBooks.map((book, bookIndex) => (
-              <div key={bookIndex} className="shelf-book">
-                {book}
+    <div ref={listRef} className="bookshelf-container">
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {virtualItems.map((virtualRow) => {
+          const shelfBooks = shelves[virtualRow.index];
+          return (
+            <div
+              key={virtualRow.key}
+              data-index={virtualRow.index}
+              ref={virtualizer.measureElement}
+              className="shelf"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
+              }}
+            >
+              <div className="shelf-books">
+                {shelfBooks.map((book, bookIndex) => (
+                  <div key={bookIndex} className="shelf-book">
+                    {book}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="shelf-board">
-            <div className="shelf-edge" />
-          </div>
-        </div>
-      ))}
+              <div className="shelf-board">
+                <div className="shelf-edge" />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -208,11 +208,11 @@ export function BookCard({ book }: BookCardProps) {
             </div>
           )}
 
-          {/* Progress bar */}
+          {/* Progress bar - always visible when there's progress */}
           {book.progress > 0 && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
+            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/40 z-30">
               <div
-                className="h-full bg-white/90 transition-all duration-500"
+                className="h-full bg-white transition-all duration-500"
                 style={{ width: `${book.progress}%` }}
               />
             </div>

@@ -249,7 +249,7 @@ export function AudioPlayer({
                   {book?.title}
                 </h1>
                 <p className="text-[13px] text-[hsl(var(--reader-text))]/50 font-medium tracking-wide leading-none">
-                  {chapterTitle}
+                  Chapter {(currentChapter ?? 0) + 1} of {totalChapters}
                 </p>
               </div>
             </div>

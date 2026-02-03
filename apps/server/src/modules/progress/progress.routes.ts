@@ -7,6 +7,7 @@ const updateProgressSchema = z.object({
   chapterId: z.string().optional(),
   paragraphIndex: z.number().int().min(0).optional(),
   charPosition: z.number().int().min(0).optional(),
+  percentage: z.number().min(0).max(100).optional(), // Overall book progress
   scrollPosition: z.number().min(0).optional(), // For reading mode
   audioTimestamp: z.number().min(0).optional(), // For audio mode
   audioChunkId: z.string().optional(),
@@ -97,10 +98,13 @@ export const progressRoutes: FastifyPluginAsync = async (app) => {
         return reply.code(404).send({ error: 'Book not found' });
       }
 
-      // Calculate percentage if we have character position
-      const percentage = body.charPosition
-        ? Math.min(100, (body.charPosition / book.totalCharacters) * 100)
-        : 0;
+      // Use provided percentage, or calculate from character position
+      const percentage =
+        body.percentage !== undefined
+          ? body.percentage
+          : body.charPosition
+            ? Math.min(100, (body.charPosition / book.totalCharacters) * 100)
+            : 0;
 
       // Upsert progress
       const progress = await prisma.readingProgress.upsert({

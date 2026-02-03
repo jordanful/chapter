@@ -14,6 +14,7 @@ export function useBooks() {
   const { data: books, isLoading } = useQuery({
     queryKey: ['books'],
     queryFn: () => apiClient.getBooks(),
+    refetchOnMount: 'always', // Refresh when returning to library to get updated lastReadAt
     refetchInterval: (query) => {
       // Poll every 2 seconds if library is empty (for seed book imports)
       // Stop after books appear or query is stale (15 seconds)

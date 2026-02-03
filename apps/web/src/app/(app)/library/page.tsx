@@ -61,10 +61,19 @@ export default function LibraryPage() {
     uploadBooks,
   } = useBooks();
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'recent' | 'added' | 'title' | 'author'>('added');
+  const [sortBy, setSortBy] = useState<'recent' | 'added' | 'title' | 'author'>(() => {
+    if (typeof window === 'undefined') return 'added';
+    const saved = localStorage.getItem('library_sort');
+    return (saved as 'recent' | 'added' | 'title' | 'author') || 'added';
+  });
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
+
+  // Persist sort preference
+  useEffect(() => {
+    localStorage.setItem('library_sort', sortBy);
+  }, [sortBy]);
 
   // Filter and sort books
   const filteredBooks = useMemo(() => {
