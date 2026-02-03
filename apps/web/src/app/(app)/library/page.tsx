@@ -108,6 +108,11 @@ export default function LibraryPage() {
     return result;
   }, [books, searchQuery, sortBy, showFavoritesOnly]);
 
+  // Scroll to top when entering library
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push('/login');
