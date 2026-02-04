@@ -78,6 +78,15 @@
       margin-bottom: 2rem;
     }
 
+    .screenshot {
+      display: block;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
     code {
       font-family: 'SF Mono', Menlo, monospace;
       font-size: 0.9em;
@@ -166,6 +175,10 @@
         color: #ccc;
       }
 
+      .screenshot {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+
       a {
         color: #6cb4d1;
       }
@@ -223,6 +236,8 @@
     <p class="intro">
       A self-hosted ebook reader (server + web client) with local, AI-powered text-to-speech. Upload EPUBs, read them in your browser, or listen to them narrated aloud. Your reading position syncs between modes.
     </p>
+
+    <img src="readme-library.png" alt="Chapter library view" class="screenshot">
 
     <div class="actions">
       <a href="https://github.com/jordanful/chapter" class="btn">View on GitHub</a>
