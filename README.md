@@ -2,9 +2,7 @@
 
 **Self-hosted ebook reader with AI-narrated audiobooks** — switch seamlessly between reading and listening with word-level progress sync.
 
-![Library view](readme-library.png)
-
-<img src="readme-mobile.png" alt="Mobile reading experience" width="375" />
+![Chapter](chapter.png)
 
 ## Install
 
