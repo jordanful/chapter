@@ -149,4 +149,4 @@ pnpm dev
 
 ## License
 
-MIT
+[GPL-2.0](LICENSE)
