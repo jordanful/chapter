@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chapter — Self-hosted Ebook Reader with AI Narration</title>
+  <meta name="description" content="A self-hosted ebook reader that can read your books aloud using AI. Syncs your position between reading and listening.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Source Sans 3', -apple-system, sans-serif;
+      background: #fafafa;
+      color: #222;
+      line-height: 1.6;
+      font-size: 17px;
+      padding: 2rem 1.5rem;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: #111;
+    }
+
+    h2 {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-top: 2.5rem;
+      margin-bottom: 1rem;
+      color: #111;
+    }
+
+    p {
+      margin-bottom: 1rem;
+      color: #444;
+    }
+
+    a {
+      color: #1a5f7a;
+    }
+
+    a:hover {
+      color: #0d3d4d;
+    }
+
+    ul {
+      margin-bottom: 1rem;
+      padding-left: 1.25rem;
+      color: #444;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    .byline {
+      font-size: 0.95rem;
+      color: #666;
+      margin-bottom: 1.5rem;
+    }
+
+    .intro {
+      font-size: 1.1rem;
+      color: #333;
+      margin-bottom: 2rem;
+    }
+
+    code {
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 0.9em;
+      background: #eee;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+
+    code.copyable {
+      cursor: pointer;
+      display: block;
+      padding: 0.75em 1em;
+    }
+
+    code.copyable:hover {
+      background: #e0e0e0;
+    }
+
+    code.copied {
+      background: #d4edda;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.6rem 1.2rem;
+      background: #222;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 500;
+      margin-right: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .btn:hover {
+      background: #444;
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #222;
+      border: 1px solid #ccc;
+    }
+
+    .btn-secondary:hover {
+      background: #f0f0f0;
+      color: #222;
+    }
+
+    .actions {
+      margin: 2rem 0;
+    }
+
+    footer {
+      margin-top: 4rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #e0e0e0;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #1a1a1a;
+        color: #e0e0e0;
+      }
+
+      h1, h2 {
+        color: #f0f0f0;
+      }
+
+      p {
+        color: #bbb;
+      }
+
+      ul {
+        color: #bbb;
+      }
+
+      .byline {
+        color: #888;
+      }
+
+      .intro {
+        color: #ccc;
+      }
+
+      a {
+        color: #6cb4d1;
+      }
+
+      a:hover {
+        color: #8ecae6;
+      }
+
+      code {
+        background: #333;
+        color: #e0e0e0;
+      }
+
+      code.copyable:hover {
+        background: #444;
+      }
+
+      code.copied {
+        background: #2d4a3e;
+      }
+
+      .btn {
+        background: #e0e0e0;
+        color: #1a1a1a;
+      }
+
+      .btn:hover {
+        background: #fff;
+        color: #1a1a1a;
+      }
+
+      .btn-secondary {
+        background: transparent;
+        color: #e0e0e0;
+        border-color: #555;
+      }
+
+      .btn-secondary:hover {
+        background: #333;
+        color: #e0e0e0;
+      }
+
+      footer {
+        border-top-color: #333;
+        color: #888;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Chapter</h1>
+    <p class="byline">by <a href="https://x.com/jordanful">@jordanful</a></p>
+
+    <p class="intro">
+      A self-hosted ebook reader with AI-powered text-to-speech. Upload EPUBs, read them in your browser, or listen to them narrated aloud. Your reading position syncs between modes.
+    </p>
+
+    <div class="actions">
+      <a href="https://github.com/jordanful/chapter" class="btn">View on GitHub</a>
+    </div>
+
+    <h2>What it does</h2>
+    <ul>
+      <li>Read EPUBs in a clean, customizable reader</li>
+      <li>Generate audiobook narration using <a href="https://github.com/hexgrad/kokoro">Kokoro TTS</a> (runs locally, no API costs)</li>
+      <li>Switch between reading and listening—your position stays synced</li>
+      <li>Works offline as a PWA</li>
+      <li>Auto-imports books from folders you specify</li>
+    </ul>
+
+    <h2>Requirements</h2>
+    <ul>
+      <li>Docker (or Node.js if running without containers)</li>
+      <li>A machine with a few GB of RAM for the TTS model</li>
+    </ul>
+
+    <h2>Quick start</h2>
+    <p>
+      <code class="copyable" onclick="copyCommand(this)">curl -sSL https://raw.githubusercontent.com/jordanful/chapter/master/install.sh | bash</code>
+    </p>
+
+    <h2>Tech stack</h2>
+    <p>
+      TypeScript, Next.js, Fastify, SQLite, Prisma, Kokoro TTS.
+      Everything runs on your own hardware.
+    </p>
+  </main>
+
+  <footer>
+    <p>GPL-2.0 License · <a href="https://x.com/jordanful">@jordanful</a></p>
+  </footer>
+
+  <script>
+    function copyCommand(el) {
+      navigator.clipboard.writeText(el.textContent);
+      el.classList.add('copied');
+      const original = el.textContent;
+      el.textContent = 'Copied!';
+      setTimeout(() => {
+        el.textContent = original;
+        el.classList.remove('copied');
+      }, 1500);
+    }
+  </script>
+</body>
+</html>
