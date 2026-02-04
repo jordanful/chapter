@@ -197,6 +197,8 @@ export default function LibraryPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    const timeout = setTimeout(() => window.scrollTo(0, 0), 0);
+    return () => clearTimeout(timeout);
   }, []);
 
   useEffect(() => {

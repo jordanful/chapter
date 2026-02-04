@@ -7,11 +7,19 @@ interface ReadAlongViewProps {
   chapter: any;
   isLoading: boolean;
   onScrollProgress?: (percentage: number) => void;
+  initialScrollPosition?: number;
 }
 
-export function ReadAlongView({ chapter, isLoading, onScrollProgress }: ReadAlongViewProps) {
+export function ReadAlongView({
+  chapter,
+  isLoading,
+  onScrollProgress,
+  initialScrollPosition,
+}: ReadAlongViewProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const hasRestoredScroll = useRef(false);
+  const restoreTimeouts = useRef<NodeJS.Timeout[]>([]);
 
   const handleScroll = useCallback(() => {
     if (!onScrollProgress) return;
@@ -25,6 +33,38 @@ export function ReadAlongView({ chapter, isLoading, onScrollProgress }: ReadAlon
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
+
+  useEffect(() => {
+    if (
+      initialScrollPosition !== undefined &&
+      initialScrollPosition > 0 &&
+      chapter &&
+      !isLoading &&
+      !hasRestoredScroll.current
+    ) {
+      hasRestoredScroll.current = true;
+      restoreTimeouts.current.forEach(clearTimeout);
+      restoreTimeouts.current = [];
+
+      const restoreScroll = () => {
+        const trackLength = document.documentElement.scrollHeight - window.innerHeight;
+        if (trackLength > 0) {
+          window.scrollTo({
+            top: (initialScrollPosition / 100) * trackLength,
+            behavior: 'instant',
+          });
+        }
+      };
+
+      restoreTimeouts.current = [setTimeout(restoreScroll, 100), setTimeout(restoreScroll, 300)];
+    }
+
+    return () => restoreTimeouts.current.forEach(clearTimeout);
+  }, [chapter, initialScrollPosition, isLoading]);
+
+  useEffect(() => {
+    hasRestoredScroll.current = false;
+  }, [chapter]);
 
   useEffect(() => {
     if (chapter && !isLoading) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu } from '@base-ui/react/menu';
 import { Tooltip } from '@base-ui/react/tooltip';
@@ -16,6 +16,31 @@ import {
   Edit,
   Star,
 } from 'lucide-react';
+
+// Global cover URL cache to persist across component mounts/unmounts
+// This prevents cover flashing when books are re-arranged during scaling
+const coverCache = new Map<string, string>();
+
+function getCachedCover(bookId: string): string | null {
+  return coverCache.get(bookId) || null;
+}
+
+function setCachedCover(bookId: string, url: string): void {
+  // Revoke old URL if exists
+  const oldUrl = coverCache.get(bookId);
+  if (oldUrl && oldUrl !== url) {
+    URL.revokeObjectURL(oldUrl);
+  }
+  coverCache.set(bookId, url);
+}
+
+function clearCachedCover(bookId: string): void {
+  const url = coverCache.get(bookId);
+  if (url) {
+    URL.revokeObjectURL(url);
+    coverCache.delete(bookId);
+  }
+}
 
 // Tailwind safelist: These classes must be statically present for JIT to include them
 // prettier-ignore
@@ -52,11 +77,26 @@ interface BookCardProps {
   book: any;
 }
 
-export function BookCard({ book }: BookCardProps) {
+// Generate consistent random offset based on book ID
+function getTextureOffset(bookId: string): { x: number; y: number } {
+  let hash = 0;
+  for (let i = 0; i < bookId.length; i++) {
+    hash = (hash << 5) - hash + bookId.charCodeAt(i);
+    hash = hash & hash;
+  }
+  // Generate offsets between 0-200px for variety
+  const x = Math.abs(hash % 200);
+  const y = Math.abs((hash >> 8) % 200);
+  return { x, y };
+}
+
+export const BookCard = memo(function BookCard({ book }: BookCardProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toggleFavorite } = useBooks();
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  // Initialize from cache to prevent flash on remount
+  const [coverUrl, setCoverUrl] = useState<string | null>(() => getCachedCover(book.id));
+  const textureOffset = useMemo(() => getTextureOffset(book.id), [book.id]);
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [showCoverPicker, setShowCoverPicker] = useState(false);
   const [showMetadataEditor, setShowMetadataEditor] = useState(false);
@@ -68,29 +108,32 @@ export function BookCard({ book }: BookCardProps) {
       const bookId = book.id;
       const coverPath = book.coverPath;
 
+      // Check cache first (unless force reloading)
+      if (!forceReload) {
+        const cached = getCachedCover(bookId);
+        if (cached) {
+          setCoverUrl(cached);
+          return;
+        }
+      }
+
       try {
         const offlineCover = await offlineStorage.getCover(bookId);
         if (offlineCover) {
           const url = URL.createObjectURL(offlineCover);
-          setCoverUrl((prev) => {
-            if (prev) URL.revokeObjectURL(prev);
-            return url;
-          });
+          setCachedCover(bookId, url);
+          setCoverUrl(url);
           return;
         }
 
         if (coverPath) {
           const blob = await apiClient.getCover(bookId);
           const url = URL.createObjectURL(blob);
-          setCoverUrl((prev) => {
-            if (prev) URL.revokeObjectURL(prev);
-            return url;
-          });
+          setCachedCover(bookId, url);
+          setCoverUrl(url);
         } else if (forceReload) {
-          setCoverUrl((prev) => {
-            if (prev) URL.revokeObjectURL(prev);
-            return null;
-          });
+          clearCachedCover(bookId);
+          setCoverUrl(null);
         }
       } catch (error) {
         console.error('Failed to load cover for book:', bookId, error);
@@ -104,22 +147,16 @@ export function BookCard({ book }: BookCardProps) {
     setIsDownloaded(downloaded);
   }, [book.id]);
 
-  // Initial load
+  // Initial load - only if not already cached
   useEffect(() => {
-    loadCover(false);
+    if (!getCachedCover(book.id)) {
+      loadCover(false);
+    }
     checkDownloaded();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [book.id]); // Only reload when book.id changes
 
-  // Cleanup on unmount only
-  useEffect(() => {
-    return () => {
-      setCoverUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return null;
-      });
-    };
-  }, []);
+  // No cleanup on unmount - cover URLs are cached globally
 
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -171,9 +208,6 @@ export function BookCard({ book }: BookCardProps) {
           {/* Spine shadow overlay */}
           <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/40 via-black/20 to-transparent z-10 pointer-events-none" />
 
-          {/* Page edge effect on right side */}
-          <div className="absolute inset-y-1 right-0 w-1 bg-gradient-to-l from-stone-300 to-stone-100 z-10 pointer-events-none rounded-r-sm" />
-
           {coverUrl ? (
             <img
               src={coverUrl}
@@ -208,11 +242,20 @@ export function BookCard({ book }: BookCardProps) {
             </div>
           )}
 
+          {/* Leather texture overlay - randomized offset per book */}
+          <div
+            className="absolute inset-0 pointer-events-none z-[5] opacity-50"
+            style={{
+              backgroundImage: 'url(/leather.png)',
+              backgroundPosition: `${textureOffset.x}px ${textureOffset.y}px`,
+            }}
+          />
+
           {/* Progress bar - always visible when there's progress */}
           {book.progress > 0 && (
             <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/40 z-30">
               <div
-                className="h-full bg-white transition-all duration-500"
+                className="h-full bg-[hsl(var(--reader-accent))] transition-all duration-500"
                 style={{ width: `${book.progress}%` }}
               />
             </div>
@@ -351,7 +394,8 @@ export function BookCard({ book }: BookCardProps) {
         isOpen={showCoverPicker}
         onClose={() => {
           setShowCoverPicker(false);
-          loadCover();
+          clearCachedCover(book.id);
+          loadCover(true);
         }}
       />
 
@@ -364,4 +408,4 @@ export function BookCard({ book }: BookCardProps) {
       />
     </div>
   );
-}
+});

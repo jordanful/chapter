@@ -26,7 +26,6 @@ interface OpenLibraryEdition {
 
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 const COVER_SIZE = 'L'; // L = large, M = medium, S = small
-const PLACEHOLDER_SIZE = 43; // Open Library's "no image" placeholder is 43 bytes
 
 // Valid ISBN-10 is 10 digits (last can be X), ISBN-13 is 13 digits
 function isValidISBN(isbn: string): boolean {
@@ -107,24 +106,17 @@ class OpenLibraryService {
     }
 
     try {
-      // Check if cover exists via Open Library Covers API
+      // Add ISBN-based cover URL directly
       const coverUrl = `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-${COVER_SIZE}.jpg`;
-      const checkResponse = await fetch(coverUrl, { method: 'HEAD' });
-      const contentLength = parseInt(checkResponse.headers.get('content-length') || '0', 10);
-
-      if (checkResponse.ok && contentLength > PLACEHOLDER_SIZE) {
-        covers.push({
-          isbn: cleanIsbn,
-          coverUrl,
-          editionTitle: undefined,
-          year: undefined,
-        });
-      }
+      covers.push({
+        isbn: cleanIsbn,
+        coverUrl,
+        editionTitle: undefined,
+        year: undefined,
+      });
 
       // Also fetch edition details for more info
-      const editionResponse = await fetch(
-        `https://openlibrary.org/isbn/${cleanIsbn}.json`
-      );
+      const editionResponse = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`);
 
       if (editionResponse.ok) {
         const edition = (await editionResponse.json()) as OpenLibraryEdition;
@@ -202,9 +194,7 @@ class OpenLibraryService {
     return covers;
   }
 
-  private async fetchEditionCovers(
-    editionKeys: string[]
-  ): Promise<AlternativeCover[]> {
+  private async fetchEditionCovers(editionKeys: string[]): Promise<AlternativeCover[]> {
     const covers: AlternativeCover[] = [];
 
     for (const key of editionKeys) {
@@ -217,7 +207,7 @@ class OpenLibraryService {
         if (edition.covers && edition.covers.length > 0) {
           const isbn = edition.isbn_13?.[0] || edition.isbn_10?.[0];
           // Filter out negative IDs and limit to 2 covers per edition
-          const validCovers = edition.covers.filter(id => id > 0).slice(0, 2);
+          const validCovers = edition.covers.filter((id) => id > 0).slice(0, 2);
           for (const coverId of validCovers) {
             covers.push({
               isbn,

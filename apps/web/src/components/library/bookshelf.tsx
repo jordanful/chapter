@@ -122,7 +122,7 @@ export const Bookshelf = memo(function Bookshelf({ children, scale = 1 }: Booksh
                 position: 'absolute',
                 top: 0,
                 left: 0,
-                width: '100%',
+                right: 0,
                 transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
               }}
             >
