@@ -1,7 +1,7 @@
 'use client';
 
 import { Tabs } from '@base-ui/react/tabs';
-import { Book, Headphones } from 'lucide-react';
+import { Book, Headphones, WifiOff } from 'lucide-react';
 
 export type ReaderMode = 'reading' | 'listening';
 
@@ -9,15 +9,24 @@ interface ModeToggleProps {
   mode: ReaderMode;
   onModeChange: (mode: ReaderMode) => void;
   className?: string;
+  disableListening?: boolean;
+  disableListeningReason?: string;
 }
 
-export function ModeToggle({ mode, onModeChange, className = '' }: ModeToggleProps) {
+export function ModeToggle({
+  mode,
+  onModeChange,
+  className = '',
+  disableListening = false,
+  disableListeningReason,
+}: ModeToggleProps) {
+  const handleValueChange = (value: string | null) => {
+    if (value === 'listening' && disableListening) return;
+    if (value) onModeChange(value as ReaderMode);
+  };
+
   return (
-    <Tabs.Root
-      value={mode}
-      onValueChange={(value) => onModeChange(value as ReaderMode)}
-      className={className}
-    >
+    <Tabs.Root value={mode} onValueChange={handleValueChange} className={className}>
       <Tabs.List className="relative inline-flex items-center gap-1 p-1.5 bg-[hsl(var(--reader-text))]/5 backdrop-blur-sm rounded-2xl border border-[hsl(var(--reader-text))]/8">
         <Tabs.Tab
           value="reading"
@@ -29,9 +38,19 @@ export function ModeToggle({ mode, onModeChange, className = '' }: ModeTogglePro
 
         <Tabs.Tab
           value="listening"
-          className="relative z-10 flex items-center justify-center gap-2 w-10 sm:w-[88px] py-2 rounded-xl font-semibold text-[13px] transition-all duration-300 outline-none text-[hsl(var(--reader-text))]/40 data-[selected]:text-[hsl(var(--reader-text))] hover:text-[hsl(var(--reader-text))]/60"
+          disabled={disableListening}
+          title={disableListening ? disableListeningReason : undefined}
+          className={`relative z-10 flex items-center justify-center gap-2 w-10 sm:w-[88px] py-2 rounded-xl font-semibold text-[13px] transition-all duration-300 outline-none ${
+            disableListening
+              ? 'text-[hsl(var(--reader-text))]/20 cursor-not-allowed'
+              : 'text-[hsl(var(--reader-text))]/40 data-[selected]:text-[hsl(var(--reader-text))] hover:text-[hsl(var(--reader-text))]/60'
+          }`}
         >
-          <Headphones className="w-4 h-4 shrink-0" />
+          {disableListening ? (
+            <WifiOff className="w-4 h-4 shrink-0" />
+          ) : (
+            <Headphones className="w-4 h-4 shrink-0" />
+          )}
           <span className="tracking-wide hidden sm:inline">Listen</span>
         </Tabs.Tab>
 

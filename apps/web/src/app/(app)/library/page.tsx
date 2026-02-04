@@ -10,7 +10,7 @@ import { UploadButton } from '@/components/library/upload-button';
 import { Bookshelf } from '@/components/library/bookshelf';
 import { Select } from '@base-ui/react/select';
 import { Slider } from '@base-ui/react/slider';
-import { Settings, Search, X, ChevronDown, Check, Star } from 'lucide-react';
+import { Settings, Search, X, ChevronDown, Check, Star, WifiOff } from 'lucide-react';
 
 function BookScaleSlider({
   value,
@@ -106,6 +106,7 @@ export default function LibraryPage() {
   const {
     books,
     isLoading: booksLoading,
+    isOfflineMode,
     uploadingBooks,
     dismissUploadError,
     uploadBooks,
@@ -204,14 +205,18 @@ export default function LibraryPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragCounter((prev) => prev + 1);
-    if (e.dataTransfer.types.includes('Files')) {
-      setIsDragging(true);
-    }
-  }, []);
+  const handleDragEnter = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (isOfflineMode) return; // Disable drag when offline
+      setDragCounter((prev) => prev + 1);
+      if (e.dataTransfer.types.includes('Files')) {
+        setIsDragging(true);
+      }
+    },
+    [isOfflineMode]
+  );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -279,13 +284,18 @@ export default function LibraryPage() {
     return items;
   }, [filteredBooks, uploadingBooks, dismissUploadError, searchQuery]);
 
-  if (authLoading) {
+  if (authLoading || booksLoading) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: 'url(/wood.png) repeat' }}
+        className="min-h-screen pt-20"
+        style={{
+          backgroundColor: '#1a1410',
+          backgroundImage: 'url(/wood.png)',
+          backgroundRepeat: 'repeat',
+          ['--book-scale' as string]: bookScale,
+        }}
       >
-        <p className="text-white/80 text-lg">Loading...</p>
+        <Bookshelf scale={bookScale}>{[]}</Bookshelf>
       </div>
     );
   }
@@ -298,7 +308,9 @@ export default function LibraryPage() {
     <div
       className="min-h-screen relative"
       style={{
-        background: 'url(/wood.png) repeat',
+        backgroundColor: '#1a1410',
+        backgroundImage: 'url(/wood.png)',
+        backgroundRepeat: 'repeat',
         ['--book-scale' as string]: bookScale,
       }}
       onDragEnter={handleDragEnter}
@@ -392,7 +404,7 @@ export default function LibraryPage() {
             )}
 
             <div className="flex items-center gap-3 shrink-0">
-              <UploadButton variant="shelf" />
+              {!isOfflineMode && <UploadButton variant="shelf" />}
               <button
                 onClick={() => router.push('/settings')}
                 className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 transition-all duration-300 hover:scale-105 active:scale-95"
@@ -410,8 +422,30 @@ export default function LibraryPage() {
         </div>
       </header>
 
+      {/* Offline Mode Banner */}
+      {isOfflineMode && (
+        <div
+          className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 ease-out ${
+            isHeaderVisible ? 'translate-y-[72px]' : 'translate-y-0'
+          }`}
+        >
+          <div className="bg-amber-500/90 backdrop-blur-sm border-b border-amber-600/50">
+            <div className="max-w-[1400px] mx-auto px-[1.5rem] md:px-[3rem] py-2.5">
+              <div className="flex items-center justify-center gap-2 text-sm text-amber-950">
+                <WifiOff className="w-4 h-4" />
+                <span className="font-medium">Offline mode</span>
+                <span className="text-amber-900">— Showing downloaded books</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
-      <main className="pt-20" style={{ ['--book-scale' as string]: bookScale }}>
+      <main
+        className={`pt-20 ${isOfflineMode ? 'mt-10' : ''}`}
+        style={{ ['--book-scale' as string]: bookScale }}
+      >
         {allItems.length === 0 && searchQuery ? (
           <div className="flex flex-col items-center justify-center py-24 text-center px-4">
             <div className="bg-black/30 backdrop-blur-sm rounded-2xl p-8 max-w-md">
@@ -426,7 +460,7 @@ export default function LibraryPage() {
               </button>
             </div>
           </div>
-        ) : allItems.length === 0 && !booksLoading ? (
+        ) : allItems.length === 0 ? (
           <div className="relative">
             {/* Empty shelves */}
             <Bookshelf scale={bookScale}>{[]}</Bookshelf>
@@ -434,13 +468,23 @@ export default function LibraryPage() {
             {/* Floating prompt */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="pointer-events-auto text-center">
-                <p className="text-white/70 text-sm mb-3">Drop EPUBs here to get started</p>
-                <UploadButton variant="shelf" size="sm" />
+                {isOfflineMode ? (
+                  <>
+                    <WifiOff className="w-8 h-8 text-white/40 mx-auto mb-3" />
+                    <p className="text-white/70 text-sm mb-1">No downloaded books</p>
+                    <p className="text-white/50 text-xs">
+                      Connect to the internet to access your library
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-white/70 text-sm mb-3">Drop EPUBs here to get started</p>
+                    <UploadButton variant="shelf" size="sm" />
+                  </>
+                )}
               </div>
             </div>
           </div>
-        ) : allItems.length === 0 && booksLoading ? (
-          <Bookshelf scale={bookScale}>{[]}</Bookshelf>
         ) : (
           <>
             {/* Search results indicator */}

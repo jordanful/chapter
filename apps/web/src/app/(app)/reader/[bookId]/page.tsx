@@ -7,6 +7,7 @@ import { useBook, useBookStructure, useChapter } from '@/lib/hooks/use-books';
 import { useGenerateAudio, useAudioChunks, useGenerateChunk } from '@/lib/hooks/use-tts';
 import { useProgress } from '@/lib/hooks/use-progress';
 import { useSettingsStore } from '@/lib/stores/settings-store';
+import { useOnlineStatus } from '@/lib/hooks/use-online-status';
 import { ChapterNav } from '@/components/reader/chapter-nav';
 import { AudioPlayer } from '@/components/reader/AudioPlayer';
 import { ReaderMode } from '@/components/reader/ModeToggle';
@@ -32,6 +33,7 @@ export default function ReaderPage() {
 
   const { progress, updateProgress, saveNow } = useProgress(bookId);
   const { data: chapter, isLoading: chapterLoading } = useChapter(bookId, currentChapter);
+  const { isOnline } = useOnlineStatus();
   const { generate, isGenerating } = useGenerateAudio();
   const { generateChunk } = useGenerateChunk();
   const { tts } = useSettingsStore();
@@ -138,6 +140,13 @@ export default function ReaderPage() {
       setCurrentAudioChunk(audioChunks[0].id);
     }
   }, [mode, audioChunks, currentAudioChunk]);
+
+  // Switch to reading mode if we go offline while listening
+  useEffect(() => {
+    if (!isOnline && mode === 'listening') {
+      setMode('reading');
+    }
+  }, [isOnline, mode]);
 
   // Generate audio when switching to listening mode
   useEffect(() => {
@@ -334,6 +343,7 @@ export default function ReaderPage() {
           chapter={chapter}
           isLoading={chapterLoading}
           onScrollProgress={handleScrollProgress}
+          initialScrollPosition={isProgressRestored ? progress?.scrollPosition : undefined}
         />
       </div>
 
@@ -374,6 +384,8 @@ export default function ReaderPage() {
           hasNext={structure ? currentChapter < structure.chapters.length - 1 : false}
           mode={mode}
           onModeChange={handleModeChange}
+          disableListening={!isOnline}
+          disableListeningReason="Listen mode requires an internet connection"
         />
       ) : audioChunks && audioChunks.length > 0 && !isGenerating ? (
         <AudioPlayer

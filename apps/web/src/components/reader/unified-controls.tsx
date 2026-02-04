@@ -23,6 +23,8 @@ interface UnifiedControlsProps {
   // Mode
   mode: ReaderMode;
   onModeChange: (mode: ReaderMode) => void;
+  disableListening?: boolean;
+  disableListeningReason?: string;
 }
 
 export function UnifiedControls({
@@ -38,6 +40,8 @@ export function UnifiedControls({
   hasNext,
   mode,
   onModeChange,
+  disableListening,
+  disableListeningReason,
 }: UnifiedControlsProps) {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -160,7 +164,12 @@ export function UnifiedControls({
 
             {/* Right: Mode toggle + Menu */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <ModeToggle mode={mode} onModeChange={onModeChange} />
+              <ModeToggle
+                mode={mode}
+                onModeChange={onModeChange}
+                disableListening={disableListening}
+                disableListeningReason={disableListeningReason}
+              />
 
               <button
                 onClick={onToggleNav}
