@@ -16,8 +16,8 @@ export async function connectDatabase() {
 
     // Enable WAL mode and optimize SQLite performance
     await prisma.$queryRawUnsafe('PRAGMA journal_mode = WAL');
-    await prisma.$executeRawUnsafe('PRAGMA synchronous = normal');
-    await prisma.$executeRawUnsafe('PRAGMA busy_timeout = 5000');
+    await prisma.$queryRawUnsafe('PRAGMA synchronous = normal');
+    await prisma.$queryRawUnsafe('PRAGMA busy_timeout = 5000');
 
     console.log('✅ Database connected');
   } catch (error) {
