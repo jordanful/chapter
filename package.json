@@ -1,6 +1,6 @@
 {
   "name": "chapter",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "description": "Self-hosted reading and audiobook sync system",
   "scripts": {
@@ -22,6 +22,13 @@
     "prettier": "^3.2.4",
     "turbo": "^1.11.3",
     "typescript": "^5.3.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "prisma",
+      "@prisma/client",
+      "@prisma/engines"
+    ]
   },
   "packageManager": "pnpm@10.28.0",
   "engines": {

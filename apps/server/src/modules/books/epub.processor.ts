@@ -135,6 +135,7 @@ export class EPUBProcessor {
         data: {
           userId,
           bookId,
+          tags: [],
         },
       });
     }

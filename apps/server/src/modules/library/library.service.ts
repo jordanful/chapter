@@ -9,11 +9,7 @@ export class LibraryService {
   /**
    * Create a new watched folder
    */
-  async createWatchedFolder(
-    userId: string,
-    path: string,
-    name?: string
-  ): Promise<WatchedFolder> {
+  async createWatchedFolder(userId: string, path: string, name?: string): Promise<WatchedFolder> {
     // Check folder limit
     const existingCount = await prisma.watchedFolder.count({
       where: { userId },
@@ -264,6 +260,7 @@ export class LibraryService {
         data: {
           userId,
           bookId: existingBook.id,
+          tags: [],
         },
       });
       return true;

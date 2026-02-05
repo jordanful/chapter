@@ -33,21 +33,6 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-chapter}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chapter}
-      POSTGRES_DB: ${POSTGRES_DB:-chapter}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SQL', 'pg_isready', '-U', 'chapter']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
   redis:
     image: redis:7-alpine
     command: redis-server --appendonly yes
@@ -63,15 +48,13 @@ services:
   server:
     image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-jordanful}/chapter-server:latest
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       kokoro:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-chapter}:${POSTGRES_PASSWORD:-chapter}@postgres:5432/${POSTGRES_DB:-chapter}
+      DATABASE_URL: file:/app/data/chapter.db
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production-use-openssl-rand-base64-48}
       BOOK_STORAGE_PATH: /app/data/books
@@ -123,7 +106,6 @@ configs:
 
 volumes:
   chapter_data:
-  postgres_data:
   redis_data:
   kokoro_cache:
   caddy_data:

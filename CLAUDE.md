@@ -65,7 +65,7 @@ chapter/
 
 ## Database
 
-PostgreSQL with Prisma ORM. Key models: User, Book, Chapter, Paragraph, ReadingProgress, TTSCache.
+SQLite with Prisma ORM. Database file at `data/chapter.db`. Key models: User, Book, Chapter, Paragraph, ReadingProgress, TTSCache.
 
 When modifying `prisma/schema.prisma`:
 
@@ -91,4 +91,4 @@ pnpm test:coverage     # Coverage report
 
 ## Docker Services
 
-Full deployment uses 6 services: PostgreSQL, Redis, Kokoro TTS, Server, Web, Caddy (reverse proxy). See root `docker-compose.yml` for production or `docker/docker-compose.yml` for development.
+Full deployment uses 5 services: Redis, Kokoro TTS, Server, Web, Caddy (reverse proxy). See root `docker-compose.yml` for production or `docker/docker-compose.yml` for development.

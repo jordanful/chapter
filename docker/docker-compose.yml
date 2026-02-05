@@ -3,25 +3,6 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: chapter-postgres
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-chapter}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chapter}
-      POSTGRES_DB: ${POSTGRES_DB:-chapter}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - '5432:5432'
-    healthcheck:
-      test: ['CMD-SQL', 'pg_isready', '-U', 'chapter']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - chapter_network
-
   redis:
     image: redis:7-alpine
     container_name: chapter-redis
@@ -71,15 +52,13 @@ services:
       dockerfile: apps/server/Dockerfile
     container_name: chapter-server
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
       kokoro:
         condition: service_healthy
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-chapter}:${POSTGRES_PASSWORD:-chapter}@postgres:5432/${POSTGRES_DB:-chapter}
+      DATABASE_URL: file:/app/data/chapter.db
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
       PORT: 3001
@@ -133,7 +112,6 @@ services:
 
 volumes:
   chapter_data:
-  postgres_data:
   redis_data:
   kokoro_cache:
   caddy_data:
