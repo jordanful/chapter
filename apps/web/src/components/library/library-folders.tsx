@@ -51,12 +51,13 @@ export function LibraryFolders() {
             Automatically import books from filesystem folders
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           {hasFolders && (
             <Button
               variant="outline"
               onClick={handleScanAll}
               disabled={scanAll.isPending}
+              className="whitespace-nowrap"
             >
               {scanAll.isPending ? (
                 <>
@@ -71,7 +72,7 @@ export function LibraryFolders() {
               )}
             </Button>
           )}
-          <Button onClick={() => setShowAddDialog(true)}>
+          <Button className="whitespace-nowrap" onClick={() => setShowAddDialog(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Add Folder
           </Button>
@@ -91,8 +92,8 @@ export function LibraryFolders() {
           </div>
           <h3 className="text-lg font-medium mb-2">No folders configured</h3>
           <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-            Add a folder to automatically scan and import EPUB files from your filesystem.
-            Perfect for syncing with existing book collections.
+            Add a folder to automatically scan and import EPUB files from your filesystem. Perfect
+            for syncing with existing book collections.
           </p>
           <Button onClick={() => setShowAddDialog(true)}>
             <Plus className="w-4 h-4 mr-2" />
