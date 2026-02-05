@@ -39,6 +39,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Install OpenSSL for Prisma's PostgreSQL engine
+RUN apk add --no-cache openssl
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 chapter
@@ -50,7 +53,7 @@ COPY --from=builder --chown=chapter:nodejs /app/apps/server/package.json ./
 COPY --from=builder --chown=chapter:nodejs /app/apps/server/prisma ./prisma
 COPY --from=builder --chown=chapter:nodejs /app/apps/server/seed-books ./seed-books
 
-# Create data directory (SQLite database, books, audio cache)
+# Create data directory (books, audio cache)
 RUN mkdir -p /app/data/books /app/data/audio && chown -R chapter:nodejs /app/data
 
 # Startup script to run migrations and start server

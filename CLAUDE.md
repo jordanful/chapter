@@ -9,6 +9,7 @@ Chapter is a self-hosted monorepo application for reading books and listening to
 ## Common Commands
 
 **Root commands (run from project root):**
+
 ```bash
 pnpm install          # Install all dependencies
 pnpm dev              # Start all dev servers (web:3000, server:3001)
@@ -19,6 +20,7 @@ pnpm format           # Format with Prettier
 ```
 
 **Server-specific (apps/server):**
+
 ```bash
 pnpm db:push          # Push Prisma schema to DB (development)
 pnpm db:migrate       # Create database migration
@@ -27,6 +29,7 @@ pnpm db:studio        # Open Prisma Studio UI
 ```
 
 **Running a single test:**
+
 ```bash
 pnpm test -- --filter=@chapter/server --testNamePattern="test name"
 # Or from specific workspace:
@@ -54,6 +57,7 @@ chapter/
 ```
 
 **Key architectural patterns:**
+
 - **Multi-level position tracking**: Progress stored at chapter/paragraph/token/character level for precise read↔audiobook sync
 - **Modular Fastify plugins**: Each feature in `modules/` is a self-contained Fastify plugin
 - **Offline-first web**: IndexedDB + Service Worker for PWA support
@@ -61,11 +65,10 @@ chapter/
 
 ## Database
 
-SQLite with Prisma ORM. Key models: User, Book, Chapter, Paragraph, ReadingProgress, TTSCache.
-
-Database file: `apps/server/data/chapter.db` (dev) or `/app/data/chapter.db` (Docker)
+PostgreSQL with Prisma ORM. Key models: User, Book, Chapter, Paragraph, ReadingProgress, TTSCache.
 
 When modifying `prisma/schema.prisma`:
+
 1. Run `pnpm db:generate` to update Prisma client
 2. Run `pnpm db:push` (dev) or `pnpm db:migrate` (production) to apply changes
 
@@ -88,4 +91,4 @@ pnpm test:coverage     # Coverage report
 
 ## Docker Services
 
-Full deployment uses 5 services: Redis, Kokoro TTS, Server (with SQLite), Web, Caddy (reverse proxy). See root `docker-compose.yml` for production or `docker/docker-compose.yml` for development.
+Full deployment uses 6 services: PostgreSQL, Redis, Kokoro TTS, Server, Web, Caddy (reverse proxy). See root `docker-compose.yml` for production or `docker/docker-compose.yml` for development.

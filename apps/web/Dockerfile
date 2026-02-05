@@ -31,6 +31,9 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 # Build the app
 RUN cd apps/web && pnpm build
 
+# Create flat, symlink-free node_modules with production deps only
+RUN pnpm --filter @chapter/web deploy --prod --legacy /app/deploy
+
 # Production image
 FROM base AS runner
 WORKDIR /app
@@ -41,9 +44,14 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built app
-COPY --from=builder /app/apps/web/public ./public
+# Copy standalone output (contains server.js but has broken pnpm symlinks in node_modules)
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+
+# Replace broken pnpm symlinks with flat, real node_modules from pnpm deploy
+COPY --from=builder --chown=nextjs:nodejs /app/deploy/node_modules ./node_modules
+
+# Copy public and static assets
+COPY --from=builder /app/apps/web/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./.next/static
 
 USER nextjs
