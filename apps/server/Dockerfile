@@ -27,7 +27,8 @@ COPY --from=deps /app/packages ./packages
 COPY --from=deps /app/apps/server ./apps/server
 COPY pnpm-workspace.yaml package.json tsconfig.json ./
 
-# Build the app
+# Build workspace packages, then the server
+RUN pnpm --filter @chapter/types build && pnpm --filter @chapter/utils build && pnpm --filter @chapter/epub-parser build
 RUN cd apps/server && pnpm build
 
 # Create a flat, symlink-free node_modules with production deps only
