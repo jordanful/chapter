@@ -30,6 +30,9 @@ COPY pnpm-workspace.yaml package.json tsconfig.json ./
 # Build the app
 RUN cd apps/server && pnpm build
 
+# Create a flat, symlink-free node_modules with production deps only
+RUN pnpm --filter @chapter/server deploy --prod --legacy /app/deploy
+
 # Production image
 FROM base AS runner
 WORKDIR /app
@@ -42,7 +45,7 @@ RUN adduser --system --uid 1001 chapter
 
 # Copy built app
 COPY --from=builder --chown=chapter:nodejs /app/apps/server/dist ./dist
-COPY --from=builder --chown=chapter:nodejs /app/apps/server/node_modules ./node_modules
+COPY --from=builder --chown=chapter:nodejs /app/deploy/node_modules ./node_modules
 COPY --from=builder --chown=chapter:nodejs /app/apps/server/package.json ./
 COPY --from=builder --chown=chapter:nodejs /app/apps/server/prisma ./prisma
 COPY --from=builder --chown=chapter:nodejs /app/apps/server/seed-books ./seed-books
