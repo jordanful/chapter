@@ -9,7 +9,17 @@ import { useTTS } from '@/lib/hooks/use-tts';
 import { useSettingsStore, type Theme, type FontSize } from '@/lib/stores/settings-store';
 import { apiClient } from '@/lib/api-client';
 import { LibraryFolders } from '@/components/library/library-folders';
-import { ArrowLeft, Volume2, ChevronDown, Check, Sun, Moon, BookOpen, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Volume2,
+  ChevronDown,
+  Check,
+  Sun,
+  Moon,
+  BookOpen,
+  Trash2,
+  Database,
+} from 'lucide-react';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -25,6 +35,13 @@ export default function SettingsPage() {
     totalEntries: number;
   } | null>(null);
   const [clearingCache, setClearingCache] = useState(false);
+  const [metadataStats, setMetadataStats] = useState<{
+    totalBooks: number;
+    bloatedBooks: number;
+    estimatedBloatMB: number;
+  } | null>(null);
+  const [cleaningMetadata, setCleaningMetadata] = useState(false);
+  const [metadataCleaned, setMetadataCleaned] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -42,8 +59,17 @@ export default function SettingsPage() {
         // Silently fail - cache stats are optional
       }
     };
+    const loadMetadataStats = async () => {
+      try {
+        const stats = await apiClient.getMetadataStats();
+        setMetadataStats(stats);
+      } catch (error) {
+        // Silently fail - stats are optional
+      }
+    };
     if (isAuthenticated) {
       loadCacheStats();
+      loadMetadataStats();
     }
   }, [isAuthenticated]);
 
@@ -56,6 +82,19 @@ export default function SettingsPage() {
       console.error('Failed to clear cache:', error);
     } finally {
       setClearingCache(false);
+    }
+  };
+
+  const cleanMetadata = async () => {
+    setCleaningMetadata(true);
+    try {
+      await apiClient.cleanMetadata();
+      setMetadataStats((prev) => (prev ? { ...prev, bloatedBooks: 0, estimatedBloatMB: 0 } : prev));
+      setMetadataCleaned(true);
+    } catch (error) {
+      console.error('Failed to clean metadata:', error);
+    } finally {
+      setCleaningMetadata(false);
     }
   };
 
@@ -423,6 +462,37 @@ export default function SettingsPage() {
               </div>
             </div>
           </section>
+
+          {/* Maintenance Section */}
+          {metadataStats && metadataStats.bloatedBooks > 0 && (
+            <section className="mb-8">
+              <h2 className="text-lg font-semibold mb-4 text-white/90">Maintenance</h2>
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Database className="w-4 h-4 text-white/70" />
+                      <p className="text-sm font-medium text-white/90">Database Cleanup</p>
+                    </div>
+                    <p className="text-xs text-white/50">
+                      {metadataCleaned
+                        ? 'Metadata cleaned successfully'
+                        : `${metadataStats.bloatedBooks} of ${metadataStats.totalBooks} books have embedded cover images in metadata (~${metadataStats.estimatedBloatMB} MB). These are already saved as files and can be safely removed from the database.`}
+                    </p>
+                  </div>
+                  {!metadataCleaned && (
+                    <button
+                      onClick={cleanMetadata}
+                      disabled={cleaningMetadata}
+                      className="ml-4 shrink-0 h-9 px-4 rounded-lg border border-white/20 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white/90 transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {cleaningMetadata ? 'Cleaning...' : 'Clean Up'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* Info Section */}
           <section>

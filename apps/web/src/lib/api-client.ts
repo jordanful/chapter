@@ -321,6 +321,18 @@ class APIClient {
   async getFolderScanStatus(folderId: string): Promise<FolderScanStatus> {
     return this.request<FolderScanStatus>(`/library/folders/${folderId}/status`);
   }
+
+  async getMetadataStats(): Promise<{
+    totalBooks: number;
+    bloatedBooks: number;
+    estimatedBloatMB: number;
+  }> {
+    return this.request('/books/maintenance/metadata-stats');
+  }
+
+  async cleanMetadata(): Promise<{ cleaned: number }> {
+    return this.request('/books/maintenance/clean-metadata', { method: 'POST' });
+  }
 }
 
 export const apiClient = new APIClient();

@@ -28,7 +28,6 @@ export class BooksService {
             filePath: true,
             fileSize: true,
             fileHash: true,
-            epubMetadata: true,
             totalWords: true,
             totalCharacters: true,
             totalChapters: true,
@@ -253,6 +252,56 @@ export class BooksService {
       where: { id: bookId },
       data: updateData,
     });
+  }
+
+  async getMetadataStats(): Promise<{
+    totalBooks: number;
+    bloatedBooks: number;
+    estimatedBloatMB: number;
+  }> {
+    const books = await prisma.book.findMany({
+      select: { id: true, epubMetadata: true },
+    });
+
+    let bloatedBooks = 0;
+    let estimatedBloatBytes = 0;
+
+    for (const book of books) {
+      const meta = book.epubMetadata as Record<string, unknown> | null;
+      if (meta && 'coverData' in meta) {
+        bloatedBooks++;
+        const coverJson = JSON.stringify(meta.coverData);
+        estimatedBloatBytes += Buffer.byteLength(coverJson, 'utf8');
+      }
+    }
+
+    return {
+      totalBooks: books.length,
+      bloatedBooks,
+      estimatedBloatMB: Math.round((estimatedBloatBytes / 1024 / 1024) * 10) / 10,
+    };
+  }
+
+  async cleanMetadata(): Promise<{ cleaned: number }> {
+    const books = await prisma.book.findMany({
+      select: { id: true, epubMetadata: true },
+    });
+
+    let cleaned = 0;
+
+    for (const book of books) {
+      const meta = book.epubMetadata as Record<string, unknown> | null;
+      if (meta && 'coverData' in meta) {
+        const { coverData, ...rest } = meta;
+        await prisma.book.update({
+          where: { id: book.id },
+          data: { epubMetadata: rest as any },
+        });
+        cleaned++;
+      }
+    }
+
+    return { cleaned };
   }
 
   async setFavorite(userId: string, bookId: string, isFavorite: boolean): Promise<void> {

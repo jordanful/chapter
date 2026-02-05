@@ -83,6 +83,26 @@ export const booksRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
+  app.get('/maintenance/metadata-stats', async (request, reply) => {
+    try {
+      const stats = await booksService.getMetadataStats();
+      return reply.send(stats);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to get metadata stats';
+      return reply.code(500).send({ error: message });
+    }
+  });
+
+  app.post('/maintenance/clean-metadata', async (request, reply) => {
+    try {
+      const result = await booksService.cleanMetadata();
+      return reply.send(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to clean metadata';
+      return reply.code(500).send({ error: message });
+    }
+  });
+
   app.get('/:bookId', async (request, reply) => {
     try {
       const userId = (request.user as any).userId;

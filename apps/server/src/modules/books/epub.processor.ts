@@ -37,6 +37,8 @@ export class EPUBProcessor {
       return undefined;
     };
 
+    const { coverData: _, ...epubMetadata } = structure.metadata;
+
     book = await prisma.book.create({
       data: {
         title: normalizeField(structure.metadata.title) || 'Untitled',
@@ -49,7 +51,7 @@ export class EPUBProcessor {
         filePath,
         fileSize: epubBuffer.length,
         fileHash,
-        epubMetadata: structure.metadata as any,
+        epubMetadata: epubMetadata as any,
         totalWords: structure.totalWords,
         totalCharacters: structure.totalCharacters,
         totalChapters: structure.chapters.length,
