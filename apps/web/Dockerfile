@@ -28,7 +28,9 @@ COPY pnpm-workspace.yaml package.json ./
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-# Build the app
+# Build workspace packages, then the web app
+COPY tsconfig.json ./
+RUN pnpm --filter @chapter/types build
 RUN cd apps/web && pnpm build
 
 # Create flat, symlink-free node_modules with production deps only
