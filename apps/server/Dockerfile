@@ -33,6 +33,9 @@ RUN cd apps/server && pnpm build
 # Create a flat, symlink-free node_modules with production deps only
 RUN pnpm --filter @chapter/server deploy --prod --legacy /app/deploy
 
+# Rebuild native modules (bcrypt) in deployed node_modules
+RUN apk add --no-cache python3 make g++ && cd /app/deploy && npm rebuild bcrypt
+
 # Production image
 FROM base AS runner
 WORKDIR /app
