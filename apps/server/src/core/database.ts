@@ -13,6 +13,12 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 export async function connectDatabase() {
   try {
     await prisma.$connect();
+
+    // Enable WAL mode and optimize SQLite performance
+    await prisma.$executeRawUnsafe('PRAGMA journal_mode = WAL');
+    await prisma.$executeRawUnsafe('PRAGMA synchronous = normal');
+    await prisma.$executeRawUnsafe('PRAGMA busy_timeout = 5000');
+
     console.log('✅ Database connected');
   } catch (error) {
     console.error('❌ Database connection failed:', error);
