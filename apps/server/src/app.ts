@@ -35,6 +35,19 @@ export async function buildApp(): Promise<FastifyInstance> {
     secret: config.jwt.secret,
   });
 
+  // Allow empty body on JSON content-type requests
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
+    if (!body || (body as string).length === 0) {
+      done(null, undefined);
+      return;
+    }
+    try {
+      done(null, JSON.parse(body as string));
+    } catch (err) {
+      done(err as Error, undefined);
+    }
+  });
+
   // Health check
   app.get('/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
