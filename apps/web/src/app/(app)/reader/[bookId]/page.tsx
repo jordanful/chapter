@@ -232,11 +232,14 @@ export default function ReaderPage() {
       const newChapter = currentChapter - 1;
       setCurrentChapter(newChapter);
       setCurrentScrollProgress(0);
+      setCurrentAudioTime(0);
+      setCurrentAudioChunk(null);
       updateProgress({
         chapterIndex: newChapter,
         chapterId: structure?.chapters[newChapter]?.id,
         scrollPosition: 0,
         audioTimestamp: 0,
+        audioChunkId: undefined,
       });
     }
   };
@@ -246,11 +249,14 @@ export default function ReaderPage() {
       const newChapter = currentChapter + 1;
       setCurrentChapter(newChapter);
       setCurrentScrollProgress(0);
+      setCurrentAudioTime(0);
+      setCurrentAudioChunk(null);
       updateProgress({
         chapterIndex: newChapter,
         chapterId: structure?.chapters[newChapter]?.id,
         scrollPosition: 0,
         audioTimestamp: 0,
+        audioChunkId: undefined,
       });
     }
   };
