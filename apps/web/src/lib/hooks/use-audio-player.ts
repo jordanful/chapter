@@ -72,6 +72,7 @@ export function useAudioPlayer({
   const animationFrameRef = useRef<number | null>(null);
   const hasInitializedRef = useRef<boolean>(false);
   const chunksRef = useRef<AudioChunk[]>(chunks);
+  const playbackGenerationRef = useRef<number>(0); // Incremented on each new playback to invalidate stale onended handlers
 
   const [state, setState] = useState<AudioPlayerState>({
     isPlaying: false,
@@ -211,9 +212,13 @@ export function useAudioPlayer({
     async (chunkIndex: number, offsetWithinChunk: number = 0) => {
       const ctx = ensureAudioContext();
 
+      // Increment generation to invalidate any pending onended handlers
+      const generation = ++playbackGenerationRef.current;
+
       // Stop current playback
       if (currentSourceRef.current) {
         try {
+          currentSourceRef.current.onended = null; // Remove handler before stopping to prevent triggering
           currentSourceRef.current.stop();
         } catch (e) {
           // Ignore - might already be stopped
@@ -222,6 +227,7 @@ export function useAudioPlayer({
       }
       if (nextSourceRef.current) {
         try {
+          nextSourceRef.current.onended = null;
           nextSourceRef.current.stop();
         } catch (e) {}
         nextSourceRef.current = null;
@@ -260,7 +266,8 @@ export function useAudioPlayer({
         // Use ref to get latest chunks (not stale closure)
         const currentChunks = chunksRef.current;
 
-        if (!isPlayingRef.current) {
+        // Check if this handler is still valid (not from a superseded playback)
+        if (!isPlayingRef.current || generation !== playbackGenerationRef.current) {
           return;
         }
 
@@ -400,11 +407,13 @@ export function useAudioPlayer({
       // Pause
       if (currentSourceRef.current) {
         try {
+          currentSourceRef.current.onended = null;
           currentSourceRef.current.stop();
         } catch (e) {}
         currentSourceRef.current = null;
       }
       isPlayingRef.current = false;
+      playbackGenerationRef.current++;
       setState((prev) => ({ ...prev, isPlaying: false }));
     } else {
       // Resume from current position
@@ -557,11 +566,13 @@ export function useAudioPlayer({
       // Stop current playback
       if (currentSourceRef.current) {
         try {
+          currentSourceRef.current.onended = null;
           currentSourceRef.current.stop();
         } catch (e) {}
         currentSourceRef.current = null;
       }
       isPlayingRef.current = false;
+      playbackGenerationRef.current++;
       currentChunkIndexRef.current = 0;
       chunkStartOffsetRef.current = 0;
 
@@ -619,6 +630,7 @@ export function useAudioPlayer({
     return () => {
       if (currentSourceRef.current) {
         try {
+          currentSourceRef.current.onended = null;
           currentSourceRef.current.stop();
         } catch (e) {}
         currentSourceRef.current = null;
